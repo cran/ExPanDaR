@@ -44,6 +44,10 @@ default_config <- list(
   bgbg_stat = "mean",
   bgbg_sort_by_stat = FALSE,
   bgbg_group_by = "All",
+  bgvg_var = "None",
+  bgvg_byvar = "None",
+  bgvg_sort_by_stat = FALSE,
+  bgvg_group_by = "All",
   hist_var = "None",
   hist_group_by = "All",
   hist_nr_of_breaks = 20,
@@ -70,7 +74,8 @@ default_config <- list(
   reg_fe1 = "None",
   reg_fe2 = "None",
   reg_by = "None",
-  cluster = 1
+  cluster = 1,
+  model = "ols"
 )
 
 quote_escape <- function(string) {
@@ -140,8 +145,13 @@ create_config <- function(s, v, ds_id) {
     desc_group_by = "All",
     bgbg_var = v$var_name[v$ds_id == ds_id & v$type == "numeric"][1],
     bgbg_byvar = select_factor(s[s$ds_id == ds_id, v$var_name[v$ds_id == ds_id & v$type != "cs_id" & v$type != "ts_id"], drop = FALSE]),
+    bgbg_stat = "mean",
     bgbg_sort_by_stat = TRUE,
     bgbg_group_by = "All",
+    bgvg_var = v$var_name[v$ds_id == ds_id & v$type == "numeric"][1],
+    bgvg_byvar = select_factor(s[s$ds_id == ds_id, v$var_name[v$ds_id == ds_id & v$type != "cs_id" & v$type != "ts_id"], drop = FALSE]),
+    bgvg_sort_by_stat = TRUE,
+    bgvg_group_by = "All",
     hist_var = v$var_name[v$ds_id == ds_id & v$type == "numeric"][1],
     hist_group_by = "All",
     hist_nr_of_breaks = 20,
@@ -168,7 +178,8 @@ create_config <- function(s, v, ds_id) {
     reg_fe1 = "None",
     reg_fe2 = "None",
     reg_by = "None",
-    cluster = 1
+    cluster = 1,
+    model = "ols"
   )
   return(c)
 }
@@ -185,12 +196,6 @@ function(input, output, session) {
   base_variable <- NULL
 
   check_whether_data_is_valid <- function(v) {
-    if (length(which(v$type == "factor" | v$type == "logical")) == 0) {
-      if (DEBUG) warning("No variables suitable as factors in data")
-      session$sendCustomMessage(type = 'testmessage',
-                                message = paste0('Your data contains no factors or logical values. At least one is required.'))
-      return(FALSE)
-    }
     if (length(which(v$type == "numeric")) < 2) {
       if (DEBUG) warning("Less than two numerical variables in data")
       session$sendCustomMessage(type = 'testmessage',
@@ -204,10 +209,13 @@ function(input, output, session) {
   check_vars <- function() {
     factor_names <- unique(c(lfactor$name, lcs_id$name, lts_id$name, llogical$name, "None"))
     numeric_names <- c(lnumeric$name, llogical$name, "None")
+    depvar_names <- unique(c(lnumeric$name, llogical$name, l2level$name))
     if (!uc$bar_chart_var1 %in% factor_names) uc$bar_chart_var1 = factor_names[1]
     if (!uc$bar_chart_var2 %in% factor_names) uc$bar_chart_var2 = "None"
     if (!uc$bgbg_var %in% numeric_names) uc$bgbg_var = numeric_names[1]
     if (!uc$bgbg_byvar %in% factor_names) uc$bgbg_byvar = factor_names[1]
+    if (!uc$bgvg_var %in% numeric_names) uc$bgvg_var = numeric_names[1]
+    if (!uc$bgvg_byvar %in% factor_names) uc$bgvg_byvar = factor_names[1]
     if (!uc$hist_var %in% numeric_names) uc$hist_var = numeric_names[1]
     if (!uc$hist_var %in% numeric_names) uc$hist_var = numeric_names[1]
     if (!uc$ext_obs_var %in% numeric_names) uc$ext_obs_var = numeric_names[1]
@@ -219,13 +227,14 @@ function(input, output, session) {
     if (!uc$scatter_y %in% numeric_names) uc$scatter_y = numeric_names[2]
     if (!uc$scatter_size %in% numeric_names) uc$scatter_size = "None"
     if (!uc$scatter_color %in% union(factor_names, numeric_names)) uc$scatter_color = "None"
-    if (!uc$reg_y %in% numeric_names) uc$reg_y = numeric_names[1]
+    if (!uc$reg_y %in% depvar_names) uc$reg_y = numeric_names[1]
     uc$reg_x <- intersect(uc$reg_x, numeric_names)
     if (length(uc$reg_x) == 0) uc$reg_x = numeric_names[2]
 
     if (!uc$reg_fe1 %in% factor_names) uc$reg_fe1 = "None"
     if (!uc$reg_fe2 %in% factor_names) uc$reg_fe2 = "None"
     if (!uc$reg_by %in% factor_names) uc$reg_by = "None"
+    if (!uc$model %in% c("ols", "logit")) uc$model = "ols"
     if (uc$cluster == 2 & uc$reg_fe1 == "None") uc$cluster = 1
     if (uc$cluster == 3 & uc$reg_fe2 == "None") uc$cluster = 1
     if (uc$cluster == 4 & uc$reg_fe1 != "None" & uc$reg_fe2 == "None") uc$cluster = 2
@@ -300,11 +309,12 @@ function(input, output, session) {
         ifelse(ca_variable$type == "cs_id" | ca_variable$type == "ts_id", FALSE, TRUE)
       if (shiny_long_def && any(base_variable$var_def != "")) {
         for (i in 1:nrow(ca_variable)) {
-          vars <- CodeDepends::getInputs(parse(text = ca_variable$var_def[i]))@inputs
+          tokens <- utils::getParseData(parse(text = ca_variable$var_def[i], keep.source = TRUE))
+          vars <- tokens$text[tokens$token == "SYMBOL"]
           if (length(vars) > 1) var_defs <- c(ca_variable$var_def[i], rep("", length(vars) - 1)) else var_defs <- ca_variable$var_def[i]
           ca_variable$var_def[i] <- paste(var_defs,
                                           paste0(vars, ": ",
-                                                 base_variable$var_def[base_variable$var_name %in% vars]),
+                                                 base_variable$var_def[match(vars, base_variable$var_name)]),
                                           collapse = "\n", sep = "\n")
         }
       }
@@ -341,10 +351,11 @@ function(input, output, session) {
     can_be_na <- TRUE
     new_def <- data.frame(var_name = udv_name, var_def = udv_def, type, can_be_na, stringsAsFactors = FALSE)
     if (shiny_long_def && server_side_data && any(base_variable$var_def != "")) {
-      vars <- CodeDepends::getInputs(parse(text = udv_def))@inputs
+      tokens <- getParseData(parse(text = udv_def, keep.source = TRUE))
+      vars <- tokens$text[tokens$token == "SYMBOL"]
       if (length(vars) > 1) udv_defs <- c(udv_def, rep("", length(vars) - 1)) else udv_defs <- udv_def
       new_def <- paste(udv_defs, paste0(vars, ": ",
-                                    bs_definition$var_def[bs_definition$var_name %in% vars]),
+                                    bs_definition$var_def[match(vars, bs_definition$var_name)]),
                        collapse = "\n", sep = "\n")
       new_def <- data.frame(var_name = udv_name, var_def = new_def, type, can_be_na, stringsAsFactors = FALSE)
     }
@@ -394,7 +405,7 @@ function(input, output, session) {
     # Prepare a sandbox environment that should be user code-safe
     myenv = new.env(parent=emptyenv())
     # Define names of R functions which are allowed for calculation
-    allowedFunctions = c("(", "==", "&", "|", "+", "-", "*", "/", "<", ">", "^","exp", "log", "lag", "lead")
+    allowedFunctions = c("(", "==", "&", "|", "+", "-", "*", "/", "<", ">", "!", "is.na", "^","exp", "log", "lag", "lead")
     # Assign the functions to the evaluation environment
     for(name in allowedFunctions){
       assign(name,match.fun(name), envir=myenv)
@@ -423,10 +434,11 @@ function(input, output, session) {
         else type <- "factor"
         new_def <- cbind(x[1], x[2], type, 1)
         if (shiny_long_def && server_side_data && any(base_variable$var_def != "")) {
-          vars <- CodeDepends::getInputs(parse(text = x[2]))@inputs
+          tokens <- getParseData(parse(text = x[2], keep.source = TRUE))
+          vars <- tokens$text[tokens$token == "SYMBOL"]
           if (length(vars) > 1) var_defs <- c(x[2], rep("", length(vars) - 1)) else var_defs <- x[2]
           var_def <- paste(var_defs, paste0(vars, ": ",
-                                        bs_definition$var_def[bs_definition$var_name %in% vars]),
+                                        bs_definition$var_def[match(vars, bs_definition$var_name)]),
                            collapse = "\n", sep = "\n")
           new_def <- cbind(x[1], var_def, type, 1)
         }
@@ -452,12 +464,14 @@ function(input, output, session) {
 
   get_suitable_vars <- function(t, s, v) {
     if(t == "factor") {
-      return(which(v$type == "factor" | sapply(s, function (x) length(unique(x)) <= factor_cutoff)))
+      return(which(v$type == "factor" | sapply(s, function (x) length(unique(na.omit(x))) <= factor_cutoff)))
+    } else if (t == "2level") {
+      return(which(sapply(s, function (x) length(unique(na.omit(x))) == 2)))
     } else return(which(v$type == t))
   }
 
   create_var_categories <- function(s, v) {
-    for (type in c("cs_id", "ts_id", "numeric", "logical", "factor")) {
+    for (type in c("cs_id", "ts_id", "numeric", "logical", "factor", "2level")) {
       cand <- get_suitable_vars(type, s, v)
       assign(paste0("l", type), data.frame(
         col = cand,
@@ -580,8 +594,9 @@ function(input, output, session) {
 
   observeEvent(input$infile, {
     input_file <- input$infile
-    input_file_format <- tools::file_ext(input_file$name)
     if (is.null(input_file)) return(NULL)
+
+    input_file_format <- tools::file_ext(input_file$name)
     shiny_df <- try(rio::import(file = input_file$datapath,
                                 format = input_file_format))
     if (class(shiny_df) == "try-error") {
@@ -603,6 +618,13 @@ function(input, output, session) {
         return(NULL)
       }
     }
+    if (!is.data.frame(shiny_df) || nrow(shiny_df) < 1) {
+      warning("rio::import generated object that contains no data frame with observations. Informing user.")
+      session$sendCustomMessage(type = 'testmessage',
+                                message = sprintf("File %s does not contain data frame.", input_file$name))
+      return(NULL)
+    }
+
     shiny_df_id <- input_file$name
 
     ret <- load_sample(shiny_df, shiny_df_id, "User uploaded data")
@@ -667,6 +689,7 @@ function(input, output, session) {
       uc$subset_value <<- "All"
       uc$desc_group_by <<- "All"
       uc$bgbg_group_by <<- "All"
+      uc$bgvg_group_by <<- "All"
       uc$hist_group_by <<- "All"
       uc$ext_obs_group_by <<- "All"
       uc$trend_graph_group_by <<- "All"
@@ -696,6 +719,7 @@ function(input, output, session) {
       uc$group_factor <<- input$group_factor
       uc$desc_group_by <<- "All"
       uc$bgbg_group_by <<- "All"
+      uc$bgvg_group_by <<- "All"
       uc$hist_group_by <<- "All"
       uc$ext_obs_group_by <<- "All"
       uc$trend_graph_group_by <<- "All"
@@ -720,6 +744,10 @@ function(input, output, session) {
   observe({uc$bgbg_stat <<- req(input$bgbg_stat)})
   observe({if (is.logical(input$bgbg_sort_by_stat)) uc$bgbg_sort_by_stat <<- input$bgbg_sort_by_stat})
   observe({uc$bgbg_group_by <<- req(input$bgbg_group_by)})
+  observe({uc$bgvg_var <<- req(input$bgvg_var)})
+  observe({uc$bgvg_byvar <<- req(input$bgvg_byvar)})
+  observe({if (is.logical(input$bgvg_sort_by_stat)) uc$bgvg_sort_by_stat <<- input$bgvg_sort_by_stat})
+  observe({uc$bgvg_group_by <<- req(input$bgvg_group_by)})
   observe({uc$hist_var <<- req(input$hist_var)})
   observe({uc$hist_group_by <<- req(input$hist_group_by)})
   observe({uc$hist_nr_of_breaks <<- req(input$hist_nr_of_breaks)})
@@ -747,6 +775,12 @@ function(input, output, session) {
   observe({uc$reg_fe2 <<- req(input$reg_fe2)})
   observe({uc$reg_by <<- req(input$reg_by)})
   observe({uc$cluster <<- req(input$cluster)})
+  observe({uc$model <<- req(input$model)})
+
+  for (i in 1:18) output[[paste0("ui_separator", i)]] <- renderUI({
+    req(uc$subset_factor)
+    hr()
+  })
 
   output$ui_sample <- renderUI({
     if (!server_side_data) {
@@ -859,7 +893,23 @@ function(input, output, session) {
     tagList(mytags)
   })
 
-  output$ui_descriptive_table <- renderUI({
+  output$ui_udv_name <- renderUI({
+    req(uc$subset_factor)
+    tagList(textInput('udv_name', "Enter name for your additional variable",""),
+            helpText("If you want to create additional variables for the analysis,",
+                     "provide a name (must not be taken) and a definition here.",
+                     "A definition can consist of the base set variables,",
+                     "parentheses and the operators",
+                     "'+', '-', '*', '/', '==', '&', '|', '<', '>', '!', 'is.na()', '^', 'exp()', 'log()', 'lead()' and 'lag()'."))
+  })
+
+  output$ui_udv_def <- renderUI({
+    req(uc$subset_factor)
+    tagList(textInput('udv_definition', "Enter definition for your additional variable",""),
+            actionButton("udv_submit","Submit"))
+  })
+
+  output$ui_descriptive_table_left <- renderUI({
     df <- create_analysis_sample()
     if (simple_call_mode)
       mytags <- list(h3("Descriptive Statistics"),
@@ -884,34 +934,16 @@ function(input, output, session) {
     tagList(mytags)
   })
 
-
-  output$ui_by_group_bar_graph <- renderUI({
-    df <- create_analysis_sample()
-    mytags <- list(h3("By Group Bar Chart"),
-                   selectInput("bgbg_var", label = "Select variable to display",
-                               c(lnumeric$name, llogical$name),
-                               selected = isolate(uc$bgbg_var)),
-                   selectInput("bgbg_byvar", label = "Select variable to group by",
-                               unique(c(lts_id$name, lfactor$name)),
-                               selected = isolate(uc$bgbg_byvar)),
-                   selectInput("bgbg_stat", label = "Select statistic to display",
-                               c("Mean" = "mean",
-                                 "Median" = "median",
-                                 "Standard deviation" = "sd",
-                                 "Minimum" = "min",
-                                 "25 %" = "q25",
-                                 "75 %" = "q75",
-                                 "Maximum" = "max"),
-                               selected = isolate(uc$bgbg_stat)),
-                   hr(),
-                   checkboxInput("bgbg_sort_by_stat", "Sort by statistic", value = uc$bgbg_sort_by_stat))
-    if (uc$group_factor != "None")
-      mytags <- append(mytags, list(selectInput("bgbg_group_by", label = "Select group to subset to",
-                                                c("All", sort(levels(as.factor(df[,uc$group_factor])))),
-                                                selected = isolate(uc$bgbg_group_by)), hr()))
-    tagList(mytags)
+  output$ui_descriptive_table_right <- renderUI({
+    req(uc$subset_factor)
+    if (!simple_call_mode) {
+      tabsetPanel(type = "tabs",
+                  tabPanel("Analysis Set", DT::dataTableOutput("descriptive_table_analysis")),
+                  tabPanel("Base Set", DT::dataTableOutput("descriptive_table_base")))
+    } else {
+      DT::dataTableOutput("descriptive_table_analysis")
+    }
   })
-
 
   output$ui_histogram <- renderUI({
     df <- create_analysis_sample()
@@ -942,6 +974,52 @@ function(input, output, session) {
     mytags <- append(mytags, list(selectInput("ext_obs_period_by", label = "Select period to subset to",
                                               c("All", levels(df[,lts_id$col])),
                                               selected = isolate(uc$ext_obs_period_by))))
+    tagList(mytags)
+  })
+
+  output$ui_by_group_bar_graph <- renderUI({
+    df <- create_analysis_sample()
+    mytags <- list(h3("By Group Bar Chart"),
+                   selectInput("bgbg_var", label = "Select variable to display",
+                               c(lnumeric$name, llogical$name),
+                               selected = isolate(uc$bgbg_var)),
+                   selectInput("bgbg_byvar", label = "Select variable to group by",
+                               unique(c(lts_id$name, lfactor$name)),
+                               selected = isolate(uc$bgbg_byvar)),
+                   selectInput("bgbg_stat", label = "Select statistic to display",
+                               c("Mean" = "mean",
+                                 "Median" = "median",
+                                 "Standard deviation" = "sd",
+                                 "Minimum" = "min",
+                                 "25 %" = "q25",
+                                 "75 %" = "q75",
+                                 "Maximum" = "max"),
+                               selected = isolate(uc$bgbg_stat)),
+                   hr(),
+                   checkboxInput("bgbg_sort_by_stat", "Sort by statistic", value = uc$bgbg_sort_by_stat))
+    if (uc$group_factor != "None")
+      mytags <- append(mytags, list(selectInput("bgbg_group_by", label = "Select group to subset to",
+                                                c("All", sort(levels(as.factor(df[,uc$group_factor])))),
+                                                selected = isolate(uc$bgbg_group_by)), hr()))
+    tagList(mytags)
+  })
+
+  output$ui_by_group_violin_graph <- renderUI({
+    df <- create_analysis_sample()
+    mytags <- list(h3("By Group Violin Chart"),
+                   selectInput("bgvg_var", label = "Select variable to display",
+                               c(lnumeric$name, llogical$name),
+                               selected = isolate(uc$bgvg_var)),
+                   selectInput("bgvg_byvar", label = "Select variable to group by",
+                               unique(c(lts_id$name, lfactor$name)),
+                               selected = isolate(uc$bgvg_byvar)),
+                   checkboxInput("bgvg_sort_by_stat", "Sort by group means", value = uc$bgvg_sort_by_stat),
+                   helpText("(Note: Consider treating your outliers if this graph looks odd)"),
+                   hr())
+    if (uc$group_factor != "None")
+      mytags <- append(mytags, list(selectInput("bgvg_group_by", label = "Select group to subset to",
+                                                c("All", sort(levels(as.factor(df[,uc$group_factor])))),
+                                                selected = isolate(uc$bgvg_group_by)), hr()))
     tagList(mytags)
   })
 
@@ -1045,7 +1123,7 @@ function(input, output, session) {
     tagList(
       h3("Regression Analysis"),
       selectInput("reg_y", label = "Select the dependent variable",
-                  c(lnumeric$name, llogical$name),
+                  unique(c(lnumeric$name, l2level$name)),
                   selected = isolate(uc$reg_y)),
       selectInput("reg_x", label = "Select independent variable(s)",
                   c(lnumeric$name, llogical$name), multiple=TRUE,
@@ -1065,6 +1143,24 @@ function(input, output, session) {
   })
 
 
+  output$ui_model <- renderUI({
+    req (uc$reg_y)
+    model <- 0
+    if (isolate(uc$reg_y) %in% c(lnumeric$name, llogical$name))  model <- 1
+    if (isolate(uc$reg_y) %in% l2level$name)  model <- model + 2
+    if (model == 1) uc$model = "ols"
+    if (model == 2) uc$model = "logit"
+    if (model == 3) {
+      list(radioButtons("model", "Estimator to use",
+                        choices = list("Standard OLS" = "ols",
+                                       "Logit regression" = "logit"),
+                        selected = isolate(uc$model)),
+           helpText("Indicatate which estimator you want to use",
+                    "(only OLS and binary response logit are implemented)"))
+    }
+  })
+
+
   output$ui_clustering <- renderUI({
     req (uc$reg_fe1, uc$reg_fe2)
     cluster <- "1"
@@ -1072,17 +1168,18 @@ function(input, output, session) {
     if (isolate(uc$reg_fe2) != "None")  cluster <- "3"
     if ((isolate(uc$reg_fe1) != "None") & (isolate(uc$reg_fe2) != "None")) cluster <- "4"
     uc$cluster <- min(uc$cluster, cluster)
-    switch(cluster,
+    list(switch(cluster,
            "1"= radioButtons("cluster", "Calculation of Standard Errors",
-                             choices = list("Standard OLS" = 1), selected = isolate(uc$cluster)),
+                             choices = list("Standard" = 1), selected = isolate(uc$cluster)),
            "2"= radioButtons("cluster", "Calculation of Standard Errors",
-                             choices = list("Standard OLS" = 1, "Clustering for the first fixed effect" = 2), selected = isolate(uc$cluster)),
+                             choices = list("Standard" = 1, "Clustered for the first fixed effect" = 2), selected = isolate(uc$cluster)),
            "3"= radioButtons("cluster", "Calculation of Standard Errors",
-                             choices = list("Standard OLS" = 1, "Clustering for the second fixed effect" = 3), selected = isolate(uc$cluster)),
+                             choices = list("Standard" = 1, "Clustered for the second fixed effect" = 3), selected = isolate(uc$cluster)),
            "4"= radioButtons("cluster", "Calculation of Standard Errors",
-                             choices = list("Standard OLS" = 1, "Clustering for the first fixed effect" = 2,
-                                            "Clustering for the second fixed effect" = 3,
-                                            "Two-way clustering" = 4), selected = isolate(uc$cluster)))
+                             choices = list("Standard" = 1, "Clustered for the first fixed effect" = 2,
+                                            "Clustered for the second fixed effect" = 3,
+                                            "Two-way clustering" = 4), selected = isolate(uc$cluster))),
+    helpText("Indicatate how you want your standard errors to be estimated"))
   })
 
   output$bar_chart <- renderPlot({
@@ -1179,6 +1276,32 @@ function(input, output, session) {
     }
   )
 
+  output$histogram <- renderPlot({
+    req(uc$hist_group_by, uc$hist_var, uc$hist_nr_of_breaks)
+    df <- create_analysis_sample()
+    if (uc$hist_group_by == "All") hist(as.numeric(df[,uc$hist_var]), main="", xlab = uc$hist_var, col="red", right = FALSE, breaks=uc$hist_nr_of_breaks)
+    else hist(as.numeric(df[df[, uc$group_factor] == uc$hist_group_by, uc$hist_var]), main="", xlab = uc$hist_var, col="red", right=FALSE, breaks=uc$hist_nr_of_breaks)
+  })
+
+  output$ext_obs <- renderPrint({
+      df <- create_analysis_sample()
+      vars <- c(lcs_id$name, lts_id$name, uc$ext_obs_var)
+      if (uc$group_factor != "None") vars <- c(vars, uc$group_factor)
+      df <- df[, vars]
+      if (req(uc$ext_obs_period_by) != "All")
+        df <- df[df[, lts_id$name] == uc$ext_obs_period_by,]
+      if (req(uc$ext_obs_group_by) != "All")
+        df <- df[df[, uc$group_factor] == uc$ext_obs_group_by, vars]
+      df <- droplevels(df[complete.cases(df),])
+      if (nrow(df) <= 10) cat("Not enough data to generate table")
+      else {
+        tab <- prepare_ext_obs_table(df, var = uc$ext_obs_var)
+        cat(tab$kable_ret %>%
+              kableExtra::kable_styling())
+      }
+    }
+  )
+
   output$by_group_bar_graph.ui <- renderUI({
     req(uc$bgbg_group_by, uc$bgbg_var, uc$bgbg_byvar)
     df <- create_analysis_sample()
@@ -1206,31 +1329,27 @@ function(input, output, session) {
       ggplot2::ylab(paste(uc$bgbg_stat, uc$bgbg_var))
   })
 
-  output$histogram <- renderPlot({
-    req(uc$hist_group_by, uc$hist_var, uc$hist_nr_of_breaks)
+  output$by_group_violin_graph.ui <- renderUI({
+    req(uc$bgvg_group_by, uc$bgvg_var, uc$bgvg_byvar)
     df <- create_analysis_sample()
-    if (uc$hist_group_by == "All") hist(as.numeric(df[,uc$hist_var]), main="", xlab = uc$hist_var, col="red", right = FALSE, breaks=uc$hist_nr_of_breaks)
-    else hist(as.numeric(df[df[, uc$group_factor] == uc$hist_group_by, uc$hist_var]), main="", xlab = uc$hist_var, col="red", right=FALSE, breaks=uc$hist_nr_of_breaks)
+    if (uc$bgvg_group_by == "All")
+      bins <- length(unique(df[is.finite(df[,uc$bgvg_var]), uc$bgvg_byvar]))
+    else
+      bins <- length(unique(df[df[, uc$group_factor] == uc$bgvg_group_by & is.finite(df[,uc$bgvg_var]), uc$bgvg_byvar]))
+    isolate(plotOutput("by_group_violin_graph",
+                       height=max(400, 30 * bins)))
   })
 
-  output$ext_obs <- renderPrint({
-      df <- create_analysis_sample()
-      vars <- c(lcs_id$name, lts_id$name, uc$ext_obs_var)
-      if (uc$group_factor != "None") vars <- c(vars, uc$group_factor)
-      df <- df[, vars]
-      if (req(uc$ext_obs_period_by) != "All")
-        df <- df[df[, lts_id$name] == uc$ext_obs_period_by,]
-      if (req(uc$ext_obs_group_by) != "All")
-        df <- df[df[, uc$group_factor] == uc$ext_obs_group_by, vars]
-      df <- droplevels(df[complete.cases(df),])
-      if (nrow(df) <= 10) cat("Not enough data to generate table")
-      else {
-        tab <- prepare_ext_obs_table(df)
-        cat(tab$kable_ret %>%
-              kableExtra::kable_styling())
-      }
-    }
-  )
+  output$by_group_violin_graph <- renderPlot({
+    req(uc$bgvg_var, uc$bgvg_byvar)
+    df <- create_analysis_sample()
+    if (uc$bgvg_group_by == "All")
+      prepare_by_group_violin_graph(df[, c(uc$bgvg_byvar, uc$bgvg_var)],
+                                    uc$bgvg_byvar, uc$bgvg_var, uc$bgvg_sort_by_stat)
+    else
+      prepare_by_group_violin_graph(df[df[, uc$group_factor] == uc$bgvg_group_by, c(uc$bgvg_byvar, uc$bgvg_var)],
+                                    uc$bgvg_byvar, uc$bgvg_var, uc$bgvg_sort_by_stat)
+  })
 
   output$trend_graph <- renderPlot({
     req(uc$trend_graph_var1,uc$trend_graph_var2,uc$trend_graph_var3)
@@ -1259,8 +1378,8 @@ function(input, output, session) {
   output$corrplot.ui <- renderUI({
     req(uc$subset_factor)
     isolate(plotOutput("corrplot", hover = hoverOpts("corrplot_hover", delay = 100, delayType = "debounce"),
-               height=max(min(length(c(lnumeric$col, llogical$col))*50,1000),300),
-               width=max(min(length(c(lnumeric$col, llogical$col))*50,1000),300)))
+               height = max(min(length(c(lnumeric$col, llogical$col))*50,1000), 300),
+               width = max(min(length(c(lnumeric$col, llogical$col))*50,1000), 300)))
   })
 
   output$corrplot <- renderPlot({
@@ -1381,12 +1500,15 @@ function(input, output, session) {
 
   output$regression <- renderPrint({
     if (DEBUG) tictoc::tic("estimating regressions")
-    req(uc$reg_y, uc$reg_x, uc$reg_fe1, uc$reg_fe2, uc$reg_by)
+    req(uc$reg_y, uc$reg_x, uc$reg_fe1, uc$reg_fe2, uc$model, uc$reg_by)
     varlist <- c(uc$reg_y, uc$reg_x, uc$reg_fe1, uc$reg_fe2, uc$reg_by)
     varlist <- varlist[!varlist %in% "None"]
     df <- create_analysis_sample()[,varlist]
     if (uc$reg_by != "None") df[, uc$reg_by] <- as.factor(df[, uc$reg_by])
+    if (!uc$reg_y %in% c(lnumeric$name, llogical$name))
+      df[, uc$reg_y] <- as.factor(df[, uc$reg_y])
     df <- droplevels(df[complete.cases(df),])
+
     feffect <- ""
     if (uc$reg_fe1 != "None") {
       feffect <- uc$reg_fe1
@@ -1399,7 +1521,9 @@ function(input, output, session) {
     if (uc$cluster == 4) cluster <- c(uc$reg_fe1, uc$reg_fe2)
     cluster <- cluster[!cluster %in% "None"]
     reg_by <- ifelse(uc$reg_by != "None", uc$reg_by, "")
-    t <- prepare_regression_table(df, uc$reg_y, uc$reg_x, feffect, cluster, reg_by)
+    t <- prepare_regression_table(df = df, dvs = uc$reg_y, idvs = uc$reg_x,
+                                  feffects = feffect, clusters = cluster,
+                                  models = uc$model, byvar = reg_by)
     if (DEBUG) message(do.call(tictoc::toc.outmsg, tictoc::toc(quiet = TRUE)))
     htmltools::HTML(t$table)
   })

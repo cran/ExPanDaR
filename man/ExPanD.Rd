@@ -9,10 +9,11 @@ ExPanD(df = NULL, cs_id = NULL, ts_id = NULL, df_def = NULL,
   title = "ExPanD - Explore panel data interactively", abstract = NULL,
   df_name = deparse(substitute(df)), long_def = TRUE, factor_cutoff = 10L,
   components = c(bar_chart = TRUE, missing_values = TRUE, descriptive_table =
-  TRUE, by_group_bar_graph = TRUE, histogram = TRUE, ext_obs = TRUE, trend_graph
-  = TRUE, quantile_trend_graph = TRUE, corrplot = TRUE, scatter_plot = TRUE,
-  regression = TRUE), store_encrypted = FALSE,
-  key_phrase = "What a wonderful key", debug = FALSE, ...)
+  TRUE, histogram = TRUE, ext_obs = TRUE, by_group_bar_graph = TRUE,
+  by_group_violin_graph = TRUE, trend_graph = TRUE, quantile_trend_graph = TRUE,
+  corrplot = TRUE, scatter_plot = TRUE, regression = TRUE),
+  store_encrypted = FALSE, key_phrase = "What a wonderful key",
+  debug = FALSE, ...)
 }
 \arguments{
 \item{df}{A data frame or a list of data frames containing the panel data that
@@ -26,6 +27,9 @@ Can only be NULL if \code{df_def} is provided instead.}
 \item{ts_id}{A character scalar identifying the name of
 the variable that identifies the time series in your data. The according
 variable needs to be coercible to an ordered vector.
+If you provide a time series indicator that already is an ordered vector,
+ExPanD will verify that it has the same levels for each data frame
+and throw an error otherwise.
 Can only be NULL if \code{df_def} is provided instead.}
 
 \item{df_def}{An optional dataframe (or a list of dataframes) containing
@@ -68,9 +72,11 @@ Each variable classified as such will be treated as a factor. In addition,
 ExPanD classifies all logical values and all numerical values with less or
 equal than \code{factor_cutoff} unique values as a factor.}
 
-\item{components}{A logical vector indicating which reports you want
-ExPanD to generate. If specified, the vector does not have to be named but needs
-to be of correct length.}
+\item{components}{A logical vector indicating the reports that you want
+ExPanD to generate and their order. See the function head of \code{ExpanD}
+for the list of available reports. By default, all components are reported.
+You can also exclude selected components from the standard order by setting
+then to \code{FALSE}.}
 
 \item{store_encrypted}{Do you want the user-side saved config files to be
 encrypted? A security measure to avoid that users can inject arbitrary code
@@ -93,7 +99,7 @@ interactive panel data exploration
 }
 \details{
 If you start ExPanD without any options, it will start with an upload
-dialog so that the the user (e.g., you) can upload a data file
+dialog so that the user (e.g., you) can upload a data file
 for analysis. Supported formats are as provided
 by the \code{rio} package.
 
@@ -146,7 +152,9 @@ it defaults to being TRUE for all variables other than cs_id and ts_id.} }
   ExPanD(russell_3000, c("coid", "coname"), "period")
   ExPanD(russell_3000, df_def = russell_3000_data_def)
   ExPanD(russell_3000, df_def = russell_3000_data_def,
-    components = c(T, F, T, F, F, F, F, F, F, T, T))
+    components = c(ext_obs = T, descriptive_table = T, regression = T))
+  ExPanD(russell_3000, df_def = russell_3000_data_def,
+    components = c(missing_values = F, by_group_violin_graph = F))
   data(ExPanD_config_russell_3000)
   ExPanD(df = russell_3000, df_def = russell_3000_data_def,
     config_list = ExPanD_config_russell_3000)

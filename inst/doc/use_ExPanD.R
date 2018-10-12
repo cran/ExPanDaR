@@ -18,8 +18,11 @@ knitr::include_graphics("figures/ExPanD_file_01.jpg")
 
 ## ----gapminder-----------------------------------------------------------
 library(gapminder)
-head(gapminder, 10)
 # write.csv(gapminder, file = "gapminder.csv", row.names = FALSE)
+head(gapminder, 10)
+
+## ----gapminder duplicates------------------------------------------------
+any(duplicated(gapminder[,c("country", "year")]))
 
 ## ---- out.width = "90%", fig.align="center", fig.border = "none", echo=FALSE----
 knitr::include_graphics("figures/ExPanD_file_02.jpg")

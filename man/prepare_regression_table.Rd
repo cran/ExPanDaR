@@ -5,27 +5,26 @@
 \title{Prepares a Regression Table}
 \usage{
 prepare_regression_table(df, dvs, idvs, feffects = rep("", length(dvs)),
-  clusters = rep("", length(dvs)), byvar = "", format = "html",
-  drop_underscore = NULL)
+  clusters = rep("", length(dvs)), models = rep("auto", length(dvs)),
+  byvar = "", format = "html")
 }
 \arguments{
 \item{df}{Data frame containing the data to estimate the models on.}
 
-\item{dvs}{A character vector containing the dependent variable(s).}
+\item{dvs}{A character vector containing the variable names for the dependent variable(s).}
 
-\item{idvs}{A character vector or a a list of character vectors containing the independent variables.}
+\item{idvs}{A character vector or a a list of character vectors containing the variable names of the independent variables.}
 
-\item{feffects}{A character vector or a a list of character vectors containing the fixed effects.}
+\item{feffects}{A character vector or a a list of character vectors containing the variable names of the fixed effects.}
 
-\item{clusters}{A character vector or a a list of character vectors containing the cluster variables.}
+\item{clusters}{A character vector or a a list of character vectors containing the variable names of the cluster variables.}
+
+\item{models}{A character vector indicating the model types to be estimated ('ols', 'logit', or 'auto')}
 
 \item{byvar}{A factorial variable to estimate the model on (only possible if only one model is being estimated).}
 
 \item{format}{A character scalar that is passed on \code{\link[stargazer]{stargazer}} as \code{type} to determine the presentation
 format ("html", "text", or "latex").}
-
-\item{drop_underscore}{A quick'n'dirty hack to address a bug in stargazer that triggers it to choke on underscores in variable names.
-If not NULL, all underscores in variable names will be replaced by the given string.}
 }
 \value{
 A list containing two items
@@ -39,9 +38,13 @@ Builds a regression table based on a set of user-specified models or a single mo
 }
 \details{
 This is a wrapper function calling the stargazer package. Depending on whether the dependent variable
-  is numeric or a factor with two levels, the models are estimated
-  using \code{\link[lfe]{felm}} or \code{\link[stats]{glm}} (with \code{family = binomial(link="logit")}).
-  Fixed effects and clustered standard errors are only supported with continuous dependent variables.
+  is numeric, logical or a factor with two levels, the models are estimated
+  using \code{\link[lfe]{felm}} (for numeric dependent variables)
+  or \code{\link[stats]{glm}} (with \code{family = binomial(link="logit")}) (for two-level factors or logical variables).
+  You can override this behavior by specifying the model with the \code{models} parameter.
+  Multinomial logit models are not supported.
+  For \code{\link[stats]{glm}}, clustered standard errors are estimated using
+  \code{\link[multiwayvcov]{cluster.vcov}}.
   If run with \code{byvar}, only levels that have more observations than coefficients are estimated.
 }
 \examples{
