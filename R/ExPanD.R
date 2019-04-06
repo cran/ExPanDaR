@@ -48,11 +48,16 @@
 #'   Each variable classified as such will be treated as a factor. In addition,
 #'   ExPanD classifies all logical values and all numerical values with less or
 #'   equal than \code{factor_cutoff} unique values as a factor.
-#' @param components A logical vector indicating the reports that you want
+#' @param components A named logical vector indicating the components that you want
 #'   ExPanD to generate and their order. See the function head of \code{ExpanD}
-#'   for the list of available reports. By default, all components are reported.
+#'   for the list of available components. By default, all components are reported.
 #'   You can also exclude selected components from the standard order by setting
-#'   then to \code{FALSE}.
+#'   then to \code{FALSE}. In addition, you can include an arbitrary number of
+#'   \code{html_block} components. Each block will render clean HTML code as contained in
+#'   the \code{html_blocks} parameter below. This allows you to customize your
+#'   ExPanD report.
+#' @param html_blocks A character vector containing the clean HTML code for each
+#'   \code{html_block} that is included in \code{components}.
 #' @param store_encrypted Do you want the user-side saved config files to be
 #'   encrypted? A security measure to avoid that users can inject arbitrary code
 #'   in the config list. Probably a good idea when you are hosting sensitive data
@@ -85,7 +90,7 @@
 #' advanced mode uses (a) base sample(s) (the one(s) you provide via \code{df})
 #' and the variable definitions in \code{var_def} to generate an analysis
 #' sample based on the active base sample. In the advanced mode, the app user
-#' can generate additional variables from within the app.
+#' can delete variables from the analysis sample within the app.
 #'
 #' A \code{df_def} or \code{var_def} dataframe can contain the following
 #' variables
@@ -124,6 +129,18 @@
 #'     components = c(ext_obs = T, descriptive_table = T, regression = T))
 #'   ExPanD(russell_3000, df_def = russell_3000_data_def,
 #'     components = c(missing_values = F, by_group_violin_graph = F))
+#'   ExPanD(russell_3000, df_def = russell_3000_data_def,
+#'     components = c(html_block = T, descriptive_table = T,
+#'     html_block = T, regression = T),
+#'     html_blocks = c(
+#'     paste('<div class="col-sm-2"><h3>HTML Block 1</h3></div>',
+#'     '<div class="col-sm-10">',
+#'     "<p></p>This is a condensed variant of ExPanD with two additional HTML Blocks.",
+#'     "</div>"),
+#'     paste('<div class="col-sm-2"><h3>HTML Block 2</h3></div>',
+#'     '<div class="col-sm-10">',
+#'     "It contains only the descriptive table and the regression component.",
+#'     "</div>")))
 #'   data(ExPanD_config_russell_3000)
 #'   ExPanD(df = russell_3000, df_def = russell_3000_data_def,
 #'     config_list = ExPanD_config_russell_3000)
@@ -133,7 +150,9 @@
 #'     df_def = russell_3000_data_def,
 #'     df_name = c("Exploratory sample", "Test sample"))
 #'   ExPanD(worldbank, df_def = worldbank_data_def, var_def = worldbank_var_def,
-#'     config_list = ExPanD_config_worldbank)}
+#'     config_list = ExPanD_config_worldbank)
+#'
+#'     }
 #' @export
 
 ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
@@ -143,8 +162,12 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
                    df_name = deparse(substitute(df)),
                    long_def = TRUE,
                    factor_cutoff = 10L,
-                   components = c(bar_chart = TRUE,
+                   components = c(sample_selection = TRUE,
+                                  subset_factor = TRUE,
+                                  grouping = TRUE,
+                                  bar_chart = TRUE,
                                   missing_values = TRUE,
+                                  udvars = TRUE,
                                   descriptive_table = TRUE,
                                   histogram = TRUE,
                                   ext_obs = TRUE,
@@ -155,6 +178,7 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
                                   corrplot = TRUE,
                                   scatter_plot = TRUE,
                                   regression = TRUE),
+                   html_blocks = NULL,
                    store_encrypted = FALSE,
                    key_phrase = "What a wonderful key",
                    debug = FALSE, ...) {
@@ -164,7 +188,6 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
     if (!is.null(df_def) && (!is.null(cs_id) || !is.null(ts_id))) stop("provide either df_def or cs_id and ts_id but not both")
     if (!is.data.frame(df) && length(which(!sapply(df, is.data.frame))) > 0) stop("df is a list containing non-dataframe members")
   }
-
   if (!is.data.frame(df) && !is.null(df_def) && is.data.frame(df_def)) df_def <- rep(list(df_def), length(df))
   if (length(factor_cutoff) != 1 && !is.integer(factor_cutoff)) stop("factor_cutoff needs to be an integer scalar.")
 
@@ -176,15 +199,15 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
           df_def[[i]][1:3] <- lapply(df_def[[i]][1:3], as.character)
           if(!identical(names_df[[i]], df_def[[i]]$var_name)) stop ("Provided data definitions have different variable names than data frames")
         }
-        ts_id <- df_def[[1]][df_def[[1]][, 3] == "ts_id", 1]
-        cs_id <- df_def[[1]][df_def[[1]][, 3] == "cs_id", 1]
+        ts_id <- as.character(df_def[[1]][df_def[[1]][, 3] == "ts_id", 1])
+        cs_id <- as.character(df_def[[1]][df_def[[1]][, 3] == "cs_id", 1])
       }
       if (! ts_id %in% names_df[[1]]) stop ("Time series identifier not included in data frames.")
       if (! all(cs_id %in% names_df[[1]])) stop ("Cross sectional identifier(s) not all included in data frames.")
       for (i in 2:length(names_df)) {
         if(!identical(names_df[[1]], names_df[[i]])) stop ("Provided data frames do not have identical variable names")
         if(is.ordered(df[[1]][, ts_id]) &
-           !identical(levels(df[[1]][, ts_id]), levels(df[[2]][, ts_id]))) {
+           !identical(levels(df[[1]][, ts_id]), levels(df[[i]][, ts_id]))) {
           stop("Provided data frames' time series identifiers have different levels")
         }
       }
@@ -212,20 +235,31 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
     }
   }
 
-  comp_names <- c("bar_chart", "missing_values", "descriptive_table",
-                  "histogram", "ext_obs", "by_group_bar_graph", "by_group_violin_graph",
-                  "trend_graph", "quantile_trend_graph", "corrplot",
-                  "scatter_plot", "regression")
+  comp_names <- c("sample_selection", "subset_factor", "grouping",
+                  "bar_chart", "missing_values", "udvars", "descriptive_table",
+                  "histogram", "ext_obs", "by_group_bar_graph",
+                  "by_group_violin_graph", "trend_graph",
+                  "quantile_trend_graph", "corrplot", "scatter_plot",
+                  "regression")
 
   if (!is.vector(components) | !is.logical(components)) stop("components needs to be a vector of logical values")
-  if (is.null(names(components)) & length(components) == 12) names(components) <- comp_names
+  # The followiing legacy code is for the old calling style in Version 0.2.0
+  # using unnamed vectors
+  if (is.null(names(components)) & length(components) == 12) {
+    components <- c(rep(TRUE, 4), components)
+    names(components) <- comp_names
+  }
   if (is.null(names(components))) stop(sprintf("Component vector has missing names and is not of valid length %d", length(comp_names)))
-  if (!all(names(components) %in% comp_names)) stop(paste("Component vector has invalid names. Valid names are:", paste(comp_names, collapse = ", ")))
+  if (!all(names(components) %in% c(comp_names, "html_block"))) stop(paste("Component vector has invalid names. Valid names are:", paste(c(comp_names, "html_block"), collapse = ", ")))
   if (all(components == FALSE)) {
     rem_components <- comp_names[!(comp_names %in% names(components))]
     components <- rep(TRUE, length(rem_components))
     names(components) <- rem_components
   }
+  if (any("html_block" %in% names(components))) {
+    if (sum(names(components) == "html_block") != length(html_blocks))
+      stop("Number of html_blocks texts provided does not match number of html_block tags in components")
+  } else if (!is.null(html_blocks)) stop("html_blocks provided but no html_block tag found in components")
 
   if(!is.null(var_def)) var_def[1:3] <- lapply(var_def[1:3], as.character)
 
@@ -251,6 +285,7 @@ ExPanD <- function(df = NULL, cs_id = NULL, ts_id = NULL,
   shiny_store_encrypted <- store_encrypted
   shiny_debug <- debug
   shiny_components <- components[components]
+  shiny_html_blocks <- html_blocks
   pkg_app_dir <- system.file("application", package = "ExPanDaR")
   file.copy(pkg_app_dir, tempdir(), recursive=TRUE)
   app_dir <- paste0(tempdir(), "/application")

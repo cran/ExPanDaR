@@ -8,7 +8,7 @@ importFrom("stats", "glm")
 # Check: dependencies in R code
 # Result: NOTE
 #    Namespaces in Imports field not imported from:
-#     ‘CodeDepends’ ‘DT’ ‘PKI’ ‘shinycssloaders’ ‘tictoc’
+#     'CodeDepends' 'DT' 'PKI' 'shinycssloaders' 'tictoc'
 #     All declared Imports should be used.
 #
 # All these package namespaces are used in inst/applications
@@ -16,7 +16,7 @@ importFrom("stats", "glm")
 # So here goes:
 
 importFrom(DT, datatable)
-importFrom(PKI, PKI.digest)
+importFrom(openssl, sha256)
 importFrom(shinycssloaders, withSpinner)
 importFrom(tictoc, tic)
 importFrom(rio, import)

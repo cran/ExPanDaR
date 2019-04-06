@@ -12,11 +12,11 @@
 
 <meta name="author" content="Joachim Gassen" />
 
-<meta name="date" content="2018-10-12" />
+<meta name="date" content="2019-04-06" />
 
 <title>Using the functions of the ExPanDaR package</title>
 
-<script src="data:application/x-javascript;base64,JChkb2N1bWVudCkucmVhZHkoZnVuY3Rpb24oKXsKICAgICQoJ1tkYXRhLXRvZ2dsZT0idG9vbHRpcCJdJykudG9vbHRpcCgpOwogICAgJCgnW2RhdGEtdG9nZ2xlPSJwb3BvdmVyIl0nKS5wb3BvdmVyKCk7Cn0pOwo="></script>
+<script src="data:application/x-javascript;base64,JChkb2N1bWVudCkucmVhZHkoZnVuY3Rpb24oKXsKICAgIGlmICh0eXBlb2YgJCgnW2RhdGEtdG9nZ2xlPSJ0b29sdGlwIl0nKS50b29sdGlwID09PSAnZnVuY3Rpb24nKSB7CiAgICAgICAgJCgnW2RhdGEtdG9nZ2xlPSJ0b29sdGlwIl0nKS50b29sdGlwKCk7CiAgICB9CiAgICBpZiAoJCgnW2RhdGEtdG9nZ2xlPSJwb3BvdmVyIl0nKS5wb3BvdmVyID09PSAnZnVuY3Rpb24nKSB7CiAgICAgICAgJCgnW2RhdGEtdG9nZ2xlPSJwb3BvdmVyIl0nKS5wb3BvdmVyKCk7CiAgICB9Cn0pOwo="></script>
 
 
 <style type="text/css">code{white-space: pre;}</style>
@@ -71,7 +71,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 
 <h1 class="title toc-ignore">Using the functions of the ExPanDaR package</h1>
 <h4 class="author"><em>Joachim Gassen</em></h4>
-<h4 class="date"><em>2018-10-12</em></h4>
+<h4 class="date"><em>2019-04-06</em></h4>
 
 
 
@@ -82,7 +82,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <p>ExPanDaR is designed for exploratory panel data analysis (hence the name). Thus, while you can also use some functions on cross-sectional data, for most functions you will need a data frame containing your panel data. ExPanDaR expects the data to be organized in long format. This implies that each observation (a row) is identified by cross-sectional and time series identifiers and that variables are organized by columns. While you can have a vector of variables jointly determining the cross-section, the time-series needs to be identified by a unique variable. The ExPanDaR functions treat cross-sectional identifiers as factors and expect the time-series identifier to be coercible into an ordered factor.</p>
 <p>For this walk-through I will use the data set russell_3000, which comes with the package. It contains some financial reporting and stock return data of Russell 3000 firms from Google Finance and Yahoo Finance and has been collected using the tidyquant package in the summer of 2017. A word of caution: While the data appears to be relatively decent quality I would advise against using this data for scientific work without verifying its integrity first. These are the variables included in the data.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">kable</span>(<span class="kw">data.frame</span>(<span class="dt">Variable=</span>russell_3000_data_def<span class="op">$</span>var_name, 
-                 <span class="dt">Definition=</span>russell_3000_data_def<span class="op">$</span>var_def), 
+                 <span class="dt">Definition=</span><span class="kw">sub</span>(<span class="st">'$'</span>, <span class="st">'</span><span class="ch">\\</span><span class="st">$'</span>, russell_3000_data_def<span class="op">$</span>var_def, <span class="dt">fixed =</span> <span class="ot">TRUE</span>)), 
       <span class="dt">row.names =</span> <span class="ot">FALSE</span>)</code></pre></div>
 <table>
 <thead>
@@ -141,7 +141,15 @@ Industry
 toas
 </td>
 <td style="text-align:left;">
-Total assets at period end (M US-<span class="math inline">\() &lt;/td&gt;  &lt;/tr&gt;  &lt;tr&gt;  &lt;td style=&quot;text-align:left;&quot;&gt; sales &lt;/td&gt;  &lt;td style=&quot;text-align:left;&quot;&gt; Sales of the period (M US-\)</span>)
+Total assets at period end (M US-$)
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+sales
+</td>
+<td style="text-align:left;">
+Sales of the period (M US-$)
 </td>
 </tr>
 <tr>
@@ -1097,9 +1105,8 @@ E: return
 <div id="visuals" class="section level2">
 <h2>Visuals</h2>
 <p>Additional visuals are available for exploring time trends. <code>prepare_trend_graph()</code> can be used for comparing variables…</p>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">graph &lt;-<span class="st"> </span><span class="kw">prepare_trend_graph</span>(r3win[<span class="kw">c</span>(<span class="st">&quot;period&quot;</span>, <span class="st">&quot;nioa&quot;</span>, <span class="st">&quot;cfoa&quot;</span>, <span class="st">&quot;accoa&quot;</span>)], <span class="st">&quot;period&quot;</span>)</code></pre></div>
-<pre><code>## Warning: package 'bindrcpp' was built under R version 3.4.4</code></pre>
-<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">graph<span class="op">$</span>plot</code></pre></div>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">graph &lt;-<span class="st"> </span><span class="kw">prepare_trend_graph</span>(r3win[<span class="kw">c</span>(<span class="st">&quot;period&quot;</span>, <span class="st">&quot;nioa&quot;</span>, <span class="st">&quot;cfoa&quot;</span>, <span class="st">&quot;accoa&quot;</span>)], <span class="st">&quot;period&quot;</span>)
+graph<span class="op">$</span>plot</code></pre></div>
 <p><img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAkAAAAEgCAMAAABrWDzDAAAA51BMVEUAAAAAADoAAGYAOmYAOpAAZrYAujgzMzM6AAA6ADo6AGY6OpA6kNtNTU1NTW5NTY5NbqtNjshhnP9mAABmADpmAGZmOgBmtv9uTU1uTW5uTY5ubo5ubqtuq8huq+SOTU2OTW6OTY6Obk2ObquOyP+QOgCQOjqQZgCQkDqQkGaQtpCQ27aQ2/+rbk2rbm6rbo6rjk2ryKur5OSr5P+2ZgC225C2/9u2///Ijk3I///bkDrb25Db/9vb///kq27k///r6+vy8vL4dm3/tmb/yI7/25D/29v/5Kv//7b//8j//9v//+T////Sq8x0AAAACXBIWXMAAA7DAAAOwwHHb6hkAAAOKklEQVR4nO2dDVvbyBVGFRpIwuItIduS7FKT3Zp204W0uySF0PKxgGsM+v+/pzMjyZZjzZVGc8cjX73nSczISsQr7tFoRrGiJAXAgyR2ALDeQCDgBQQCXkAg4AUEAl7UCDQ9HOxeL7aeTkbBU4G1gRZIy3L1erF1NZgJdMMK8+aQ4CaoOTm0QNMfv6ST77+UW5MffoJAa5IgtDwaWqDJwXU6fX9aaj19/C07hb1QrCIg6Da0QPe7hUBF62pYGgOxHi7ijv/4CULLo3HsgdQXCLQ2CULLo3EcA10NNMN8Neveiitf/ATB7UnrZ2HD2SxsWJqP5bDurbjyxU8Q1JycRteBdCdUdR2IdW/FlS9+grDqZHhdiWbdW3Hli5+ASxIKCCQ4AZckFBBIs1UmXgwI5Le7vJtrQVR3DBDIZ3d5N9cCCOQOBJoT+fSlgUA+u8u7OWeiDoCCjMK4JKGAQBlblaw+BuvWuCSh6LdAC6pUKFOtVUDBIJDP7vJuzo5NAHcj6gRrsT3Hv0HCJQlFfwRqUNUAPYqTYNy9GpckFNIFatYZhD0vNf3G7N+eSxIKmQK1LIe0eSCXJBSSBPI+imMLhDGQ3+62+2uMnX90gTALa0WbIUCYMQPjthwJMgzikoSiCwLlNPi5BR7pxu+B8E8ZHlilWNkECQK50x2BvvYjwrwaArnTGYFyVeJcjsmBQO50S6DIn6eAQO50SyDODbYAArnTGYHkfZwrfgIuSSi6I5C4D5TGT8AlCUWH/oeyrdgBQAu60AOF+sdoZ9ADudMFgYrd5d0cEkCgVSMtAZckFBBIcAIuSSggkOAEXJJQQCDBCbgkoYBAghNwSUIBgQQn4JKEAgIJTsAlCQUEEpyASxIKCCQ4AZckFBBIcAIuSSggkOAEXJJQQCDBCbgkoYBAghNwSUIBgQQn4JKEAgIJTsAlCQUEEpyASxIKCCQ4AZckFBBIcAIuSSggkOAEXJJQQCDBCbgkoYBAghNwSUIBgQQn4JKEAgIJTsAlCQUEEpyASxKKRs9MLbUmbwcDPDN1TRIENSen7qnNo9KzmlVLP0R+8u40X826t+LKFz9BaHk0js+Nv9c2nRddEOveiitf/ASh5dHQAk0Ork2nU27lX14oVpAPdBxaoPvdQpt56+lkWKxmPVzEHf/xEwR2x+DcA00PZ/5AoI4nCOyOwXEMpGZho/lq1r0VV774CcKqk1E3CxvOZmGmteAPBOp4gpDiFDS6DqS7nqx1NdBgFrYeCYLbk+JKtOgEXJJQQCDBCbgkoYBAghNwSUIBgQQn4JKEAgIJTsAlCQUEEpyASxIKCCQ4AZckFBBIcILmlRy/Ov66WXqLAgIJTtCqqBAICWZbawMEQoLZ1qp4PNpRrxcbZ+OXSZLspOPtn5ONz8qWYvnVhyR5fmkEejxKko0zCNTXBNVVu1B2KIse3uznHm2a7ma+/Pzy8WhTv6W/mD8OgfqZoLpqumtRv/93mbXHL/fTqmX16073PkYsCNTLBNVV0+cw063cqVPWs2Mz1jEv+fJ2Zo166yIx7ECgniawlO3u+X+VQw9vnh3nPU1+CsuXSwLRZy8IJD2BpWwP3/1DSXJnOqF5D/T1sn5LKQWBepzAVrdPyaZxRU28SgIVy+VBtJKqxiIIJDiBrW53yb7RKHn2izlVZWOg2bKaxmcTMzONr+mFIJDgBD61bQoEEpyASxIKCCQ4AZckFBBIcAIuSSggkOAEXJJQeAkEAHogwQm4JKGAQIITcElCAYEEJ+CShAICCU5gKdvvlbR0AAIJTmApGwQKhbQElrJBoFBIS2ApGwQKhbQElrKJE2ivDNM2WwGB3OmCQDlR3TFAIHcgUAkI5E53BIp8+tL0TaDb21s5AkUfAN30TqDb27JBxVp9g+q+vi9Df5h19qrvEMvXdFkgDKJ5t2YR6HaJuUAP3x2n4+2zx6N9c/uPfr38tKNf8zWdFuhmYUrGuflG9EUgsgfSEv3pLDMle1WLxqu82VGBKsZAK3epZwJZxkCf9H+oMP7G3OmcvSqNHv92nK/prEDkLGw1KvVNoKpZmL4VXhlT0QPla9ZToNKfCugSBMqcMfcUalv+bV7PsjFQvqaDArW9Es3uEgRSXCTJH/68XzULy9d0T6Bidz3+Lo9LEMgdIQKVaOOS0H+Ns5QNAjXF1YqI7gRR2FI2CNSCRtWJfSWcO4GlbBDIC/uRHvn0ZSKwbs1SNgjExaJL0QdA7ApbygaBArDHAkcIlt3J8KltUxo98rLUmr+RihLohqV8HZCwjKWoK+yBnk5Gs4fumtb8DXkCxR8DyRNo6bHf8zcEChR/FsascHyBJgfX6fT96bw1f+OFouX37Cx7sQOsJsEKBbrfLXzJW/M3NJxHS9QeKNQgJHKC+AIRPZAogYQmiC9Qz8ZA0hLEF+jpZDibhQ2zWdhQ7ixMXIL4AuWXfXSfI/86kLwE7QV6PKIfsdJYIBrWvRVXvvgJ6gTa2tqyCLT80VUI1MMENQJtbZUNKtbqDyH+oj+ISN0NBoF6kcAm0NYSc4GyG8L+o3og6m4wCNSLBDaBqB5odjsGeTcYBOpFghqBKsdAs1vByLvBIFAvEtQJVDUL+7oHqr4bDAL1IkEbgbIbwj7PxkDVd4NBoF4kaCNQdiuY1oa6GwwC9SJBK4EcgUCCE1jKBoFCIS2BpWwQKBTSEljKBoFCIS2BpWwQKBTSEvjUtikQSHACS9nQA4VCWgJL2SBQKKQlsJQNAoVCWgJL2SBQKKQlsJQNAoVCWgJL2SBQKKQlsJQNAoVCWgJL2SBQKKQlsJStiUCNb8vwEgisJTNn9vb20AMhAbG1akr+lAzKV46/+bu+jaf0iTL6vh4IJDiBTaDl/xatJNDL2SdZG93XA4EEJ7AJRPZA+jPQ5p6MZvf1QCDBCWoEqhwDzQVqdl8PBBKcoE6gqlnYUg9Uc18PBBKcwE+gZvf1QCDBCTwFanRfDwQSnKCNQK5AIMEJLGWDQKGQlsBSNggUCmkJLGWDQKGQlsBSNggUCmkJfGrbFAgkOAGXJBQQSHACLkkoIJDgBFySUEAgwQm4JKGAQIITcElCAYEEJ+CShAICCU7AJQkFBBKcgEsSCggkOAGXJBQQSHACLkkoIJDgBFySUEAgwQm4JKGAQIITcElC0eiRl6XW5O1gMCrWsu6tuPLFTxDUnJy6h+6OZg/dNS39yO/JOzz2ez0ShJZH4/jY73tt03nRBbHurbjyxU8QWh4NLdDk4Np0OuVW/uWFYgX5QMehBbrfLbSZt/Sj43NYDxdxx3/8BIHdMdgFOh8MXlf0QNPDmT8QqOMJVuCP6xhIzcJG89WseyuufPEThFUno24WNpzNwkxrwR8I1PEEIcUpaHQdSHc9WetqoMEsbD0SBLcnxZVo0Qm4JKGAQIITcElCAYEEJ+CShAICCU7AJQkFBBKcgEsSCggkOAGXJBQQSHACLkkoIJDgBFySUEAgwQm4JKGAQIITcElCAYEEJ+CShAICCU7AJQkFBBKcgEsSCggkOAGXJBRdEOi2DNM2WwGB3OmCQBmR5dFAIHc6I1D07ucGArWhWwJFNggCudMtgW7iDoQgkDtdEGh5EB1pRA2B3OmCQMXuLr+1Yo8gkDvdFihnVR5BIHfWQqCc4B5BIHe8BIpD7lHsGMCwTj3QIgEG2uiB3FlfgQoYPYJA7qy/QDkcHkEgd8QIlOPlEQRyR5pAOe0GSBDIHaECFbh5BIHcES5QTkOPIJA7/RAop86jiAIF+VAdlyQUvRIoZ7lMHflMJPt1rRXQR4FyloRZgTy39TB+Ny5JKHosUEFRuAbla1B/HzsgkN/u8m7OFf/6s2Tg3ByXJBQQaMZKFCG/ObenXJJQQKA5Ef0pwDTeZ3d5N+fCSs9TFBDIZ3d5N4cEEGjVSEvAJQkFBBKcgEsSCggkOAGXJBQQSHACLkkoIJDgBFySUEAgwQm4JKGAQIITcElCAYEEJ+CShAICCU7AJQlFh+5Mjf8UcSRwBwIhgRcQCAm8gEBI4EWHBALrCAQCXkAg4AUEAl5AIOBFHIEmbweKv5y8Vu3z12ZxlKbTw8HutVn9/Rf95elkFDXBlfoTf/wSM8HTyeDb01ABeIgkUGbI5N2pbk7fn+qm9uVK/zjv87JdDQIK1CDBebhv3zzBfeZTZ4kqkD7yzofpvTkIR9Mfv5gV59/+alZPfvgpuEBUgqePQQ/+Bgn0UteJK9D0/a8H13nrdKKa+kAsuu+Pv4U8hdUnUGeTQfg+kEowOfgXTmGVmPO/PuaKs9TTydB01iWBrobBx0B0An1yCdgLNUnwdpRODnAKW6Y4+orG9HCYpl8ffddBBapPYAg3Dmr2M8iXuksnBNJHWpoW5//sXT0FGgyGERMYViZQVYLpXyFQNYs/vOxnZ7pwMwNZyTS+PoE+nTz9M9w0vsHP4BynsGoWf3hZZzNa7XWgBgnUuwGHsE0SqKVwF6J4wJVo4AUEAl5AIOAFBAJeQCDgBQQCXkAg4AUEKjN+dbywfLdxFifI+gCBKCBQLRCIAgLV0luBxq8+JMnzyzR9PEoS5cl4++dk47M6henlTfUHHt4kzz5AoDr6K9DLjbPHo81U/04vnl+OX26aMVDx3sObHfUbAtXRY4H2jTDmLPXwZn9hWb2YrxcQqI7+CqQnXEqci8SwY5a1QPq0pr5emK/bEKgGCKRFKZYhkDP9FcicsrbP7p4dZ8uFQHq5OIVhFlZLjwUqBtGqq1HWFALNB9GbGEQ3oL8C6Wm8nq7rabvqdQqBMI13o8cCHceOIAIIBLyAQMCL3goEeIBAwAsIBLyAQMALCAS8gEDACwgEvPg/2G0SDOhSChUAAAAASUVORK5CYII=" style="display: block; margin: auto;" /></p>
 <p>… and for eyeballing the distributional properties of a single variable over time you have <code>prepare_quantile_trend_graph()</code>.</p>
 <div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r">graph &lt;-<span class="st"> </span><span class="kw">prepare_quantile_trend_graph</span>(r3win[<span class="kw">c</span>(<span class="st">&quot;period&quot;</span>, <span class="st">&quot;return&quot;</span>)], <span class="st">&quot;period&quot;</span>, <span class="kw">c</span>(<span class="fl">0.05</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="fl">0.95</span>))

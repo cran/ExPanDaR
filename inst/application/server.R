@@ -1,5 +1,5 @@
 library(ExPanDaR)
-library(PKI)
+library(openssl)
 library(dplyr)
 
 options(shiny.maxRequestSize = 1024^3)
@@ -7,7 +7,7 @@ options(shiny.maxRequestSize = 1024^3)
 load("shiny_data.Rda")
 factor_cutoff <- shiny_factor_cutoff
 
-key <- PKI::PKI.digest(charToRaw(shiny_key_phrase), "SHA256")
+key <- openssl::sha256(charToRaw(shiny_key_phrase))
 
 DEBUG <- shiny_debug
 if (DEBUG) sample_count <<- 0
@@ -319,8 +319,13 @@ function(input, output, session) {
         }
       }
     }
-    if (!is.null(shiny_config_list)) app_config <- shiny_config_list
-    else app_config <- create_config(ca_sample, ca_variable, ca_variable$ds_id[1])
+    base_config <- create_config(ca_sample, ca_variable, ca_variable$ds_id[1])
+    if (!is.null(shiny_config_list)) {
+      for (name in names(base_config)) {
+        if (name %in% names(shiny_config_list)) base_config[[name]] <- shiny_config_list[[name]]
+      }
+    }
+    app_config <- base_config
   }
 
   create_base_sample <- reactive({
@@ -401,7 +406,6 @@ function(input, output, session) {
   }
 
   test_udv_definition <- function(udv_definition) {
-    df <- create_base_sample()
     # Prepare a sandbox environment that should be user code-safe
     myenv = new.env(parent=emptyenv())
     # Define names of R functions which are allowed for calculation
@@ -410,11 +414,23 @@ function(input, output, session) {
     for(name in allowedFunctions){
       assign(name,match.fun(name), envir=myenv)
     }
-    # And our data frame
+    # Plus the variables contained in the analysis sample
+    df <- create_ca_sample()
     for(name in names(df)){
       if (is.factor(df[,name])) assign(name, as.character(df[,name]), envir=myenv)
       else assign(name, df[,name], envir=myenv)
     }
+
+    # Plus additional variables from base data frame if !simple_call_mode
+    if (!simple_call_mode) {
+      bs <- create_base_sample()
+      new_names_bs <- names(bs)[which(!(names(bs) %in% names(df)))]
+      for(name in new_names_bs){
+        if (is.factor(bs[,name])) assign(name, as.character(bs[,name]), envir=myenv)
+        else assign(name, bs[,name], envir=myenv)
+      }
+    }
+
     new_var <- try(eval(parse(text=udv_definition), envir=myenv), silent=TRUE)
     if (length(new_var) == length(df[,1])) return (new_var) else return (NULL)
   }
@@ -603,7 +619,6 @@ function(input, output, session) {
       if (input_file_format == "dta") {
         warning("rio::import failed. Trying with encoding = 'latin1'")
         shiny_df <- try(haven::read_dta(file = input_file$datapath,
-                                        format = input_file_format,
                                         encoding = 'latin1'))
         if (class(shiny_df) == "try-error") {
           warning("This also did not work out. Informing user.")
@@ -777,7 +792,7 @@ function(input, output, session) {
   observe({uc$cluster <<- req(input$cluster)})
   observe({uc$model <<- req(input$model)})
 
-  for (i in 1:18) output[[paste0("ui_separator", i)]] <- renderUI({
+  for (i in 1:30) output[[paste0("ui_separator", i)]] <- renderUI({
     req(uc$subset_factor)
     hr()
   })
@@ -1092,13 +1107,13 @@ function(input, output, session) {
     mytags <- list(
       h3("Scatter Plot"),
       selectInput("scatter_x", label = "Select the x variable to display",
-                  c(lnumeric$name, llogical$name),
+                  c(lnumeric$name, l2level$name),
                   selected = isolate(uc$scatter_x)),
       selectInput("scatter_y", label = "Select the y variable to display",
-                  c(lnumeric$name, llogical$name),
+                  c(lnumeric$name, l2level$name),
                   selected = isolate(uc$scatter_y)),
       selectInput("scatter_size", label = "Select the variable to be reflected by dot size",
-                  c("None", lnumeric$name, llogical$name),
+                  c("None", lnumeric$name, l2level$name),
                   selected = isolate(uc$scatter_size)),
       selectInput("scatter_color", label = "Select the variable to be reflected by color",
                   c("None", names(df)),
@@ -1126,7 +1141,7 @@ function(input, output, session) {
                   unique(c(lnumeric$name, l2level$name)),
                   selected = isolate(uc$reg_y)),
       selectInput("reg_x", label = "Select independent variable(s)",
-                  c(lnumeric$name, llogical$name), multiple=TRUE,
+                  c(lnumeric$name, l2level$name), multiple=TRUE,
                   selected = isolate(uc$reg_x)),
       hr(),
       selectInput("reg_fe1", label = "Select a categorial variable as the first fixed effect",
@@ -1412,8 +1427,10 @@ function(input, output, session) {
       top_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
 
       # calculate distance from left and bottom side of the picture in pixels
-      left_px <- hover$range$left + left_pct * (hover$range$right - hover$range$left)
-      top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top)
+      left_px <- (hover$range$left + left_pct * (hover$range$right - hover$range$left)) /
+        hover$img_css_ratio$x
+      top_px <- (hover$range$top + top_pct * (hover$range$bottom - hover$range$top)) /
+        hover$img_css_ratio$y
 
       # create style property for tooltip
       # background color is set so tooltip is a bit transparent
@@ -1477,8 +1494,10 @@ function(input, output, session) {
     top_pct <- (hover$domain$top - hover$y) / (hover$domain$top - hover$domain$bottom)
 
     # calculate distance from left and bottom side of the picture in pixels
-    left_px <- hover$range$left + left_pct * (hover$range$right - hover$range$left)
-    top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top)
+    left_px <- (hover$range$left + left_pct * (hover$range$right - hover$range$left)) /
+      hover$img_css_ratio$x
+    top_px <- hover$range$top + top_pct * (hover$range$bottom - hover$range$top) /
+      hover$img_css_ratio$y
 
     # create style property for tooltip
     # background color is set so tooltip is a bit transparent
@@ -1535,12 +1554,13 @@ function(input, output, session) {
         {
           if (shiny_store_encrypted) {
             encrypted <- readRDS(in_file$datapath)
-            decrypted <- PKI.decrypt(encrypted, key, "aes256")
+            decrypted <- openssl::aes_cbc_decrypt(encrypted, key)
             config_list <- unserialize(decrypted)
           } else config_list <- readRDS(in_file$datapath)
+          if (!is.list(config_list)) stop()
           isolate(parse_config(config_list))
         }, error = function(cond) {
-          session$sendCustomMessage(type = 'testmessage', message = paste("Unable to read", in_file$datapath))
+          session$sendCustomMessage(type = 'testmessage', message = "Unable to parse file")
         })
     }
   })
@@ -1550,7 +1570,7 @@ function(input, output, session) {
     content = function(file) {
       if (shiny_store_encrypted) {
         raw <- serialize(reactiveValuesToList(uc), NULL)
-        encrypted <- PKI.encrypt(raw, key, "aes256")
+        encrypted <- openssl::aes_cbc_encrypt(raw, key, iv = NULL)
         saveRDS(encrypted, file)
       } else saveRDS(reactiveValuesToList(uc), file)
     }

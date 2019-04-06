@@ -7,11 +7,13 @@
 ExPanD(df = NULL, cs_id = NULL, ts_id = NULL, df_def = NULL,
   var_def = NULL, config_list = NULL,
   title = "ExPanD - Explore panel data interactively", abstract = NULL,
-  df_name = deparse(substitute(df)), long_def = TRUE, factor_cutoff = 10L,
-  components = c(bar_chart = TRUE, missing_values = TRUE, descriptive_table =
-  TRUE, histogram = TRUE, ext_obs = TRUE, by_group_bar_graph = TRUE,
-  by_group_violin_graph = TRUE, trend_graph = TRUE, quantile_trend_graph = TRUE,
-  corrplot = TRUE, scatter_plot = TRUE, regression = TRUE),
+  df_name = deparse(substitute(df)), long_def = TRUE,
+  factor_cutoff = 10L, components = c(sample_selection = TRUE,
+  subset_factor = TRUE, grouping = TRUE, bar_chart = TRUE, missing_values =
+  TRUE, udvars = TRUE, descriptive_table = TRUE, histogram = TRUE, ext_obs
+  = TRUE, by_group_bar_graph = TRUE, by_group_violin_graph = TRUE,
+  trend_graph = TRUE, quantile_trend_graph = TRUE, corrplot = TRUE,
+  scatter_plot = TRUE, regression = TRUE), html_blocks = NULL,
   store_encrypted = FALSE, key_phrase = "What a wonderful key",
   debug = FALSE, ...)
 }
@@ -72,11 +74,17 @@ Each variable classified as such will be treated as a factor. In addition,
 ExPanD classifies all logical values and all numerical values with less or
 equal than \code{factor_cutoff} unique values as a factor.}
 
-\item{components}{A logical vector indicating the reports that you want
+\item{components}{A named logical vector indicating the components that you want
 ExPanD to generate and their order. See the function head of \code{ExpanD}
-for the list of available reports. By default, all components are reported.
+for the list of available components. By default, all components are reported.
 You can also exclude selected components from the standard order by setting
-then to \code{FALSE}.}
+then to \code{FALSE}. In addition, you can include an arbitrary number of
+\code{html_block} components. Each block will render clean HTML code as contained in
+the \code{html_blocks} parameter below. This allows you to customize your
+ExPanD report.}
+
+\item{html_blocks}{A character vector containing the clean HTML code for each
+\code{html_block} that is included in \code{components}.}
 
 \item{store_encrypted}{Do you want the user-side saved config files to be
 encrypted? A security measure to avoid that users can inject arbitrary code
@@ -116,7 +124,7 @@ When you provide \code{var_def}, ExPanD starts up in the "advanced mode". The
 advanced mode uses (a) base sample(s) (the one(s) you provide via \code{df})
 and the variable definitions in \code{var_def} to generate an analysis
 sample based on the active base sample. In the advanced mode, the app user
-can generate additional variables from within the app.
+can delete variables from the analysis sample within the app.
 
 A \code{df_def} or \code{var_def} dataframe can contain the following
 variables
@@ -155,6 +163,18 @@ it defaults to being TRUE for all variables other than cs_id and ts_id.} }
     components = c(ext_obs = T, descriptive_table = T, regression = T))
   ExPanD(russell_3000, df_def = russell_3000_data_def,
     components = c(missing_values = F, by_group_violin_graph = F))
+  ExPanD(russell_3000, df_def = russell_3000_data_def,
+    components = c(html_block = T, descriptive_table = T,
+    html_block = T, regression = T),
+    html_blocks = c(
+    paste('<div class="col-sm-2"><h3>HTML Block 1</h3></div>',
+    '<div class="col-sm-10">',
+    "<p></p>This is a condensed variant of ExPanD with two additional HTML Blocks.",
+    "</div>"),
+    paste('<div class="col-sm-2"><h3>HTML Block 2</h3></div>',
+    '<div class="col-sm-10">',
+    "It contains only the descriptive table and the regression component.",
+    "</div>")))
   data(ExPanD_config_russell_3000)
   ExPanD(df = russell_3000, df_def = russell_3000_data_def,
     config_list = ExPanD_config_russell_3000)
@@ -164,5 +184,7 @@ it defaults to being TRUE for all variables other than cs_id and ts_id.} }
     df_def = russell_3000_data_def,
     df_name = c("Exploratory sample", "Test sample"))
   ExPanD(worldbank, df_def = worldbank_data_def, var_def = worldbank_var_def,
-    config_list = ExPanD_config_worldbank)}
+    config_list = ExPanD_config_worldbank)
+
+    }
 }

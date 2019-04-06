@@ -12,7 +12,7 @@ library(kableExtra)
 
 ## ----variables-----------------------------------------------------------
 kable(data.frame(Variable=russell_3000_data_def$var_name, 
-                 Definition=russell_3000_data_def$var_def), 
+                 Definition=sub('$', '\\$', russell_3000_data_def$var_def, fixed = TRUE)), 
       row.names = FALSE)
 
 ## ----cross-sectional_ids-------------------------------------------------
