@@ -1,16 +1,16 @@
-## ----setup, include = FALSE----------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
 
-## ----intro, eval = FALSE, include = FALSE--------------------------------
+## ----intro, eval = FALSE------------------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  
 #  ExPanD(df = gapminder, cs_id = "country", ts_id = "year")
 
-## ----omit_components, eval = FALSE---------------------------------------
+## ----omit_components, eval = FALSE--------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 #  ExPanD(df = gapminder, cs_id = "country", ts_id = "year",
 #         components = c(sample_selection = FALSE, missing_values = FALSE))
 
-## ----select_components, eval = FALSE-------------------------------------
+## ----select_components, eval = FALSE------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -29,7 +29,7 @@ knitr::opts_chunk$set(
 #                        scatter_plot = TRUE,
 #                        regression = TRUE))
 
-## ----include_intro, eval = FALSE-----------------------------------------
+## ----include_intro, eval = FALSE----------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -43,7 +43,7 @@ knitr::opts_chunk$set(
 #                        scatter_plot = TRUE,
 #                        regression = TRUE))
 
-## ----include_df_def, eval = FALSE----------------------------------------
+## ----include_df_def, eval = FALSE---------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -72,7 +72,7 @@ knitr::opts_chunk$set(
 #                        regression = TRUE),
 #         df_def = df_def)
 
-## ----include_dl_clist, eval = FALSE--------------------------------------
+## ----include_dl_clist, eval = FALSE-------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -103,7 +103,7 @@ knitr::opts_chunk$set(
 #         df_def = df_def,
 #         config_list = clist)
 
-## ----include_manual_clist, eval = FALSE----------------------------------
+## ----include_manual_clist, eval = FALSE---------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -134,7 +134,8 @@ knitr::opts_chunk$set(
 #    reg_x = "gdpPercap",
 #    reg_fe1 = "country",
 #    reg_fe2 = "year",
-#    cluster = "4" # No this is hard to guess 1: none, 2: first FE, 3: second FE, 4: both FE
+#    cluster = "4" # Now this is hard to guess
+#    # 1: none, 2: first FE, 3: second FE, 4: both FE
 #  )
 #  
 #  ExPanD(df = gapminder,
@@ -148,7 +149,7 @@ knitr::opts_chunk$set(
 #         df_def = df_def,
 #         config_list = clist)
 
-## ----include_udvs, eval = FALSE------------------------------------------
+## ----include_udvs, eval = FALSE-----------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)
@@ -194,7 +195,7 @@ knitr::opts_chunk$set(
 #         df_def = df_def,
 #         config_list = clist)
 
-## ----include_html, eval = FALSE------------------------------------------
+## ----include_html, eval = FALSE-----------------------------------------------
 #  library(ExPanDaR)
 #  library(gapminder)
 #  data(gapminder)

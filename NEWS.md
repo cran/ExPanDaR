@@ -1,3 +1,20 @@
+# ExPanDaR 0.5.0
+
+Extensions:
+
+* Modified ExPanD() to process cross-sectional data with useful defaults
+
+* Implemented an export option that allows users to download a 
+zip file containing the data and a R notebook based variant of the ExPanD
+analysis (`export_nb_option = TRUE`)
+
+Minor issues:
+
+* Added an option 'binary' to prepare_missing_values_graph() to visualize whether any values are missing
+
+* Typo fixes
+
+
 # ExPanDaR 0.4.0
 
 Extensions:
@@ -6,8 +23,8 @@ Extensions:
 html content to `ExPanD()`
 
 * Added `sample_selection`, `subset_factor`, `grouping` and `udvars` variables 
-to `components` in `ExPanD()` so that these parts can also be re-arrannged 
-or ommitted.
+to `components` in `ExPanD()` so that these parts can also be re-arranged 
+or omitted
 
 * Allowed user defined variables to be built on analysis variables and used
 in simple_mode

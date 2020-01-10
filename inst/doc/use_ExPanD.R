@@ -1,4 +1,4 @@
-## ----setup, include = FALSE----------------------------------------------
+## ----setup, include = FALSE---------------------------------------------------
 library(ExPanDaR)
 library(gapminder)
 
@@ -7,7 +7,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-## ----expand_file, eval = FALSE-------------------------------------------
+## ----expand_file, eval = FALSE------------------------------------------------
 #  devtools::install_github("joachim-gassen/ExPanDaR")
 #  library(ExPanDaR)
 #  
@@ -16,18 +16,18 @@ knitr::opts_chunk$set(
 ## ---- out.width = "90%", fig.align="center", fig.border = "none", echo=FALSE----
 knitr::include_graphics("figures/ExPanD_file_01.jpg")
 
-## ----gapminder-----------------------------------------------------------
+## ----gapminder----------------------------------------------------------------
 library(gapminder)
 # write.csv(gapminder, file = "gapminder.csv", row.names = FALSE)
 head(gapminder, 10)
 
-## ----gapminder duplicates------------------------------------------------
+## ----gapminder duplicates-----------------------------------------------------
 any(duplicated(gapminder[,c("country", "year")]))
 
 ## ---- out.width = "90%", fig.align="center", fig.border = "none", echo=FALSE----
 knitr::include_graphics("figures/ExPanD_file_02.jpg")
 
-## ----expand_simple, eval = FALSE-----------------------------------------
+## ----expand_simple, eval = FALSE----------------------------------------------
 #  devtools::install_github("joachim-gassen/ExPanDaR")
 #  library(ExPanDaR)
 #  library(gapminder)
@@ -43,14 +43,14 @@ knitr::include_graphics("figures/ExPanD_simple_02.jpg")
 ## ---- out.width = "90%", fig.align="center", fig.border = "none", echo=FALSE----
 knitr::include_graphics("figures/ExPanD_simple_03.jpg")
 
-## ----simple_expland_config, eval = FALSE---------------------------------
+## ----simple_expland_config, eval = FALSE--------------------------------------
 #  ExPanD_config <- readRDS("ExPanD_config.RDS")
 #  ExPanD(df = gapminder, cs_id = "country", ts_id = "year", config_list = ExPanD_config)
 
-## ----var_def-------------------------------------------------------------
+## ----var_def------------------------------------------------------------------
 head(worldbank_var_def, 10)
 
-## ----worldbank, eval = FALSE---------------------------------------------
+## ----worldbank, eval = FALSE--------------------------------------------------
 #  library(ExPanDaR)
 #  
 #  ExPanD(df = worldbank,
@@ -85,7 +85,7 @@ knitr::include_graphics("figures/ExPanD_worldbank_08.jpg")
 ## ---- out.width = "90%", fig.align="center", fig.border = "none", echo=FALSE----
 knitr::include_graphics("figures/ExPanD_worldbank_09.jpg")
 
-## ----expand_two_samples, eval = FALSE------------------------------------
+## ----expand_two_samples, eval = FALSE-----------------------------------------
 #  library(ExPanDaR)
 #  set.seed(42)
 #  training_sample <- sample(nrow(russell_3000), round(.5*nrow(russell_3000)))
