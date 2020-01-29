@@ -1,7 +1,7 @@
 Package: ExPanDaR
 Type: Package
 Title: Explore Your Data Interactively
-Version: 0.5.0
+Version: 0.5.1
 Authors@R: person("Joachim", "Gassen", role = c("aut", "cre"), 
     email = "gassen@wiwi.hu-berlin.de",
     comment = c(ORCID = "0000-0003-4364-2911"))
@@ -21,14 +21,14 @@ Encoding: UTF-8
 LazyData: true
 Imports: tidyr, dplyr, ggplot2, corrplot, lfe, multiwayvcov, lmtest,
         stargazer, scales, shiny, DT, openssl, tictoc, shinycssloaders,
-        kableExtra, rio, zip
+        kableExtra, rio, zip, rlang
 RoxygenNote: 6.1.1
 Suggests: gapminder, rmarkdown, htmltools, knitr, devtools, tidyquant,
         wbstats
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2020-01-10 10:49:40 UTC; joachim
+Packaged: 2020-01-29 08:15:23 UTC; joachim
 Author: Joachim Gassen [aut, cre] (<https://orcid.org/0000-0003-4364-2911>)
 Maintainer: Joachim Gassen <gassen@wiwi.hu-berlin.de>
 Repository: CRAN
-Date/Publication: 2020-01-10 12:40:07 UTC
+Date/Publication: 2020-01-29 08:40:07 UTC

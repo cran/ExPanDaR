@@ -16,18 +16,13 @@ output$ui_sample <- renderUI({
 
 output$ui_select_ids <- renderUI({
   req(uc$sample)
-  vars <- ca_variable$var_name
-  names(vars) <- ca_variable$var_name
+  vars <- upload_variable$var_name
+  names(vars) <- upload_variable$var_name
   vars <- vars[!vars %in% c("cs_id", "ts_id")]
   tagList(
     selectInput(
       "cs_id", "Select cross sectional identifier(s)",
-      c("Row names" = "cs_id", vars), multiple = TRUE,
-      selected = {
-        if(exists("ca_variable"))
-          ca_variable$var_name[ca_variable$type == "cs_id"]
-        else NULL
-      }
+      c("Row names" = "cs_id", vars), multiple = TRUE
     ),
     helpText(
       "Select the variable(s) that (together) identif(y/ies) a",
@@ -37,12 +32,7 @@ output$ui_select_ids <- renderUI({
     ),
     selectInput(
       "ts_id", "Select time series identifier",
-      c("", "None" = "ts_id", vars),
-      selected = {
-        if(exists("ca_variable"))
-          ca_variable$var_name[ca_variable$type == "ts_id"]
-        else NULL
-      }
+      c("", "None" = "ts_id", vars)
     ),
     helpText(
       "Select the variable that identifies a the time series.",
@@ -52,7 +42,7 @@ output$ui_select_ids <- renderUI({
 })
 
 output$ui_subset_factor <- renderUI({
-  req(isolate(uc$subset_factor))
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   if (isolate(uc$subset_factor) != "Full Sample")
     avail_choices <- c(
@@ -71,7 +61,7 @@ output$ui_subset_factor <- renderUI({
 })
 
 output$ui_subset_value <- renderUI({
-  req(isolate(uc$subset_factor))
+  req(uc$subset_factor)
   df <- create_analysis_sample()
   if (uc$subset_factor != "Full Sample") {
     tagList(selectInput("subset_value", label = "Select subsample",
@@ -82,24 +72,36 @@ output$ui_subset_value <- renderUI({
 })
 
 output$ui_group_factor <- renderUI({
-  req(uc$group_factor)
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data()) avail_choices <- c(
+    "None",  sort(unique(c(lfactor$name, llogical$name)))
+  )
+  else avail_choices <- c(
+    "None",  sort(unique(c(lcs_id$name, lts_id$name, lfactor$name, llogical$name)))
+  )
   tagList(selectInput("group_factor", label = "Group factor",
-                      c("None",  unique(c(lcs_id$name, lts_id$name, lfactor$name, llogical$name))),
+                      avail_choices,
                       selected = isolate(uc$group_factor)),
           helpText("Select a factor for subsetting specific analyses to."))
 
 })
 
 output$ui_outlier_treatment <- renderUI({
-  req(uc$subset_factor)
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data()) avail_choices <- c(
+    "None",  sort(unique(c(lfactor$name, llogical$name)))
+  )
+  else avail_choices <- c(
+    "None",  sort(unique(c(lcs_id$name, lts_id$name, lfactor$name, llogical$name)))
+  )
   tagList(radioButtons("outlier_treatment", "Outlier treatment",
                        choices = list("No treatment" = 1, "Winsorization 1%/99%" = 2, "Winsorization 5%/95%" = 3,
                                       "Truncation 1%/99%" = 4, "Truncation 5%/95%" = 5),
                        selected = uc$outlier_treatment),
           selectInput("outlier_factor", label = "By group factor",
-                      c("None",  unique(c(lcs_id$name, lts_id$name, lfactor$name, llogical$name))),
+                      avail_choices,
                       selected = isolate(uc$outlier_factor)),
           helpText("Indicate whether you want no outlier treatment",
                    "or whether you want outliers to be winsorized",
@@ -108,7 +110,7 @@ output$ui_outlier_treatment <- renderUI({
 })
 
 output$ui_balanced_panel <- renderUI({
-  req(uc$subset_factor)
+  req(uc$config_parsed)
   if (!cross_sec_data()) {
     # Here I removed the isolate wrapper a while ago but now I do not longer understand why. Need to check this.
     tagList(checkboxInput("balanced_panel", "Balanced panel", value = uc$balanced_panel),
@@ -117,6 +119,7 @@ output$ui_balanced_panel <- renderUI({
 })
 
 output$ui_bar_chart <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   if (cross_sec_data()) suitable_vars <- unique(c(lfactor$name, llogical$name))
   else suitable_vars <- unique(c(lts_id$name, lfactor$name, llogical$name))
@@ -138,6 +141,7 @@ output$ui_bar_chart <- renderUI({
 })
 
 output$ui_missing_values <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(h3("Missing Values"),
                  helpText("This graphs shows the ratio of missing values for all variable years."))
@@ -150,7 +154,7 @@ output$ui_missing_values <- renderUI({
 })
 
 output$ui_udv_name <- renderUI({
-  req(uc$subset_factor)
+  req(uc$config_parsed)
   tagList(textInput('udv_name', "Enter name for your additional variable",""),
           helpText("If you want to create additional variables for the analysis,",
                    "provide a name (must not be taken) and a definition here.",
@@ -160,12 +164,13 @@ output$ui_udv_name <- renderUI({
 })
 
 output$ui_udv_def <- renderUI({
-  req(uc$subset_factor)
+  req(uc$config_parsed)
   tagList(textInput('udv_definition', "Enter definition for your additional variable",""),
           actionButton("udv_submit","Submit"))
 })
 
 output$ui_descriptive_table_left <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   if (simple_call_mode)
     mytags <- list(h3("Descriptive Statistics"),
@@ -191,7 +196,7 @@ output$ui_descriptive_table_left <- renderUI({
 })
 
 output$ui_descriptive_table_right <- renderUI({
-  req(uc$subset_factor)
+  req(uc$config_parsed)
   if (!simple_call_mode) {
     tabsetPanel(type = "tabs",
                 tabPanel("Analysis Set", DT::dataTableOutput("descriptive_table_analysis")),
@@ -202,6 +207,7 @@ output$ui_descriptive_table_right <- renderUI({
 })
 
 output$ui_histogram <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(h3("Histogram"),
                  selectInput("hist_var", label = "Select variable to display",
@@ -218,6 +224,7 @@ output$ui_histogram <- renderUI({
 })
 
 output$ui_ext_obs <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(h3("Extreme Observations"),
                  selectInput("ext_obs_var", label = "Select variable to sort data by",
@@ -236,13 +243,16 @@ output$ui_ext_obs <- renderUI({
 })
 
 output$ui_by_group_bar_graph <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data()) suitable_vars <- unique(c(lfactor$name, llogical$name))
+  else suitable_vars <- unique(c(lts_id$name, lfactor$name, llogical$name))
   mytags <- list(h3("By Group Bar Chart"),
                  selectInput("bgbg_var", label = "Select variable to display",
                              c(lnumeric$name, llogical$name),
                              selected = isolate(uc$bgbg_var)),
                  selectInput("bgbg_byvar", label = "Select variable to group by",
-                             unique(c(lts_id$name, lfactor$name)),
+                             suitable_vars,
                              selected = isolate(uc$bgbg_byvar)),
                  selectInput("bgbg_stat", label = "Select statistic to display",
                              c("Mean" = "mean",
@@ -263,13 +273,16 @@ output$ui_by_group_bar_graph <- renderUI({
 })
 
 output$ui_by_group_violin_graph <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data()) suitable_vars <- unique(c(lfactor$name, llogical$name))
+  else suitable_vars <- unique(c(lts_id$name, lfactor$name, llogical$name))
   mytags <- list(h3("By Group Violin Chart"),
                  selectInput("bgvg_var", label = "Select variable to display",
                              c(lnumeric$name, llogical$name),
                              selected = isolate(uc$bgvg_var)),
                  selectInput("bgvg_byvar", label = "Select variable to group by",
-                             unique(c(lts_id$name, lfactor$name)),
+                             suitable_vars,
                              selected = isolate(uc$bgvg_byvar)),
                  checkboxInput("bgvg_sort_by_stat", "Sort by group means", value = uc$bgvg_sort_by_stat),
                  helpText("(Note: Consider treating your outliers if this graph looks odd)"),
@@ -282,6 +295,7 @@ output$ui_by_group_violin_graph <- renderUI({
 })
 
 output$ui_trend_graph <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(
     h3("Time Trend Graph"),
@@ -303,6 +317,7 @@ output$ui_trend_graph <- renderUI({
 })
 
 output$ui_quantile_trend_graph <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(
     h3("Quantile Time Trend Graph"),
@@ -333,6 +348,7 @@ output$ui_quantile_trend_graph <- renderUI({
 })
 
 output$ui_corrplot <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
   mytags <- list(h3("Correlation Plot"),
                  helpText("This plot visualizes sample correlations (Pearson above, Spearman below diagonal).",
@@ -346,20 +362,25 @@ output$ui_corrplot <- renderUI({
 })
 
 output$ui_scatter_plot <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data())
+    suitable_vars <- names(df)[which(!names(df) %in%
+                                       unique(c(lts_id$name, lcs_id$name)))]
+  else suitable_vars <- names(df)[which(!names(df) %in% lcs_id$name)]
   mytags <- list(
     h3("Scatter Plot"),
     selectInput("scatter_x", label = "Select the x variable to display",
-                c(lnumeric$name, l2level$name),
+                unique(c(lnumeric$name, l2level$name)),
                 selected = isolate(uc$scatter_x)),
     selectInput("scatter_y", label = "Select the y variable to display",
-                c(lnumeric$name, l2level$name),
+                unique(c(lnumeric$name, l2level$name)),
                 selected = isolate(uc$scatter_y)),
     selectInput("scatter_size", label = "Select the variable to be reflected by dot size",
-                c("None", lnumeric$name, l2level$name),
+                unique(c("None", lnumeric$name, l2level$name)),
                 selected = isolate(uc$scatter_size)),
     selectInput("scatter_color", label = "Select the variable to be reflected by color",
-                c("None", names(df)),
+                unique(c("None", suitable_vars)),
                 selected = isolate(uc$scatter_color)),
     checkboxInput("scatter_sample",
                   label = "Sample 1,000 observations to display if number of observations is higher",
@@ -377,31 +398,35 @@ output$ui_scatter_plot <- renderUI({
 })
 
 output$ui_regression <- renderUI({
+  req(uc$config_parsed)
   df <- create_analysis_sample()
+  if (cross_sec_data()) suitable_vars <- unique(c("None", lfactor$name))
+  else suitable_vars <- unique(c("None", lcs_id$name, lts_id$name, lfactor$name))
   tagList(
     h3("Regression Analysis"),
     selectInput("reg_y", label = "Select the dependent variable",
                 unique(c(lnumeric$name, l2level$name)),
                 selected = isolate(uc$reg_y)),
     selectInput("reg_x", label = "Select independent variable(s)",
-                c(lnumeric$name, l2level$name), multiple=TRUE,
+                unique(c(lnumeric$name, l2level$name)), multiple=TRUE,
                 selected = isolate(uc$reg_x)),
     hr(),
     selectInput("reg_fe1", label = "Select a categorial variable as the first fixed effect",
-                unique(c("None", lcs_id$name, lts_id$name, lfactor$name)),
+                suitable_vars,
                 selected = isolate(uc$reg_fe1)),
     selectInput("reg_fe2", label = "Select a categorial variable as the second fixed effect",
-                unique(c("None", lcs_id$name, lts_id$name, lfactor$name)),
+                suitable_vars,
                 selected = isolate(uc$reg_fe2)),
     hr(),
     selectInput("reg_by", label = "Select a categorial variable to subset the estimated models on",
-                unique(c("None", lts_id$name, lfactor$name)),
+                suitable_vars[which(!suitable_vars %in% lcs_id$name)],
                 selected = isolate(uc$reg_by))
   )
 })
 
 
 output$ui_model <- renderUI({
+  req(uc$config_parsed)
   req (uc$reg_y)
   model <- 0
   if (isolate(uc$reg_y) %in% c(lnumeric$name, llogical$name))  model <- 1
