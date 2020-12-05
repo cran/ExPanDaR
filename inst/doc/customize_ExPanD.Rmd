@@ -85,6 +85,9 @@ Name                     Description
 `quantile_trend_graph`   A graph that visualizes the distribution of one chosen 
                          variable over time
 
+`by_group_trend_graph`   A grouped time trend graph that visualizes the 
+                         development of one variable across groups over time              
+
 `corrplot`               A visual representation of Spearman and Pearson 
                          correlations of the numerical and logical variables 
                          in the sample. Exact correlations are displayed when 
@@ -422,7 +425,7 @@ ExPanD(df = gapminder,
 ```
 
 This is it. Now we have a customized version of ExPanD focusing on communicating the robustness of the Preston Curve. 
-If you do not want to run the code yourself, you can take a quick look at the customized version [here](http://jgassen.shinyapps.io/expand_gapminder).
+If you do not want to run the code yourself, you can take a quick look at the customized version [here](https://jgassen.shinyapps.io/expand_gapminder).
 
 If you want to take customization to the next level, you can always fork the code of the 'ExPanDaR' package on GitHub. The code for the shiny app is in the `inst/app` folder of the package.
 

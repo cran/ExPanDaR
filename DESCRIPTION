@@ -1,7 +1,7 @@
 Package: ExPanDaR
 Type: Package
 Title: Explore Your Data Interactively
-Version: 0.5.1
+Version: 0.5.2
 Authors@R: person("Joachim", "Gassen", role = c("aut", "cre"), 
     email = "gassen@wiwi.hu-berlin.de",
     comment = c(ORCID = "0000-0003-4364-2911"))
@@ -15,20 +15,19 @@ Description: Provides a shiny-based front end (the 'ExPanD' app) and
     the functions of this package.
 Depends: R (>= 3.3.0)
 License: MIT + file LICENSE
-URL: https://joachim-gassen.github.io/ExPanDaR
+URL: https://joachim-gassen.github.io/ExPanDaR/
 BugReports: https://github.com/joachim-gassen/ExPanDaR/issues
 Encoding: UTF-8
 LazyData: true
-Imports: tidyr, dplyr, ggplot2, corrplot, lfe, multiwayvcov, lmtest,
+Imports: tidyr, dplyr, ggplot2, corrplot, multiwayvcov, lmtest, plm,
         stargazer, scales, shiny, DT, openssl, tictoc, shinycssloaders,
         kableExtra, rio, zip, rlang
-RoxygenNote: 6.1.1
-Suggests: gapminder, rmarkdown, htmltools, knitr, devtools, tidyquant,
-        wbstats
+RoxygenNote: 7.1.0
+Suggests: gapminder, rmarkdown, htmltools, knitr, devtools
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2020-01-29 08:15:23 UTC; joachim
+Packaged: 2020-12-05 16:21:10 UTC; joachim
 Author: Joachim Gassen [aut, cre] (<https://orcid.org/0000-0003-4364-2911>)
 Maintainer: Joachim Gassen <gassen@wiwi.hu-berlin.de>
 Repository: CRAN
-Date/Publication: 2020-01-29 08:40:07 UTC
+Date/Publication: 2020-12-05 22:50:15 UTC

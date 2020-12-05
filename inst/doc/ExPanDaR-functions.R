@@ -67,6 +67,10 @@ graph$plot
 graph <- prepare_quantile_trend_graph(r3win[c("period", "return")], "period", c(0.05, 0.25, 0.5, 0.75, 0.95))
 graph$plot
 
+## ----bgtg_plot----------------------------------------------------------------
+graph <- prepare_by_group_trend_graph(r3win, "period", "sector", "nioa")
+graph$plot
+
 ## ----scatter_plot, fig.width = 7, fig.height= 6-------------------------------
 prepare_scatter_plot(r3win, x="nioa", y="return", color="sector", size="toas", loess = 1)
 
@@ -79,8 +83,8 @@ idvs <- list(c("nioa"),
              c("nioa", "accoa"), 
              c("nioa", "accoa")) 
 feffects <- list("period", "period", "period", 
-                 c("period", "coid"), c("period", "coid"), c("period", "coid"))
-clusters <- list("", "", "", c("coid"), c("coid"), c("period", "coid"))
+                 c("coid", "period"), c("coid", "period"), c("coid", "period"))
+clusters <- list("", "", "", "coid", "coid", c("coid", "period"))
 t <- prepare_regression_table(r3win, dvs, idvs, feffects, clusters)
 htmltools::HTML(t$table)
 

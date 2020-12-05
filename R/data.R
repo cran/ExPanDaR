@@ -10,7 +10,7 @@
 #'
 #' @keywords data datasets acccounting
 #'
-#' @source Has been collected using the \code{\link[tidyquant]{tq_get}} function family in Summer 2017.
+#' @source Has been collected using the \code{tidyquant::tq_get} function family in Summer 2017.
 #'  The code to generate this data is available in the
 #'  \href{https://github.com/joachim-gassen/ExPanDaR}{github repository} of this package.
 #'  As the Google Finance API providing financial statement data is currently unavailable,
@@ -68,7 +68,7 @@
 #' }
 "ExPanD_config_russell_3000"
 
-#' A Snapshot of Macroeconomic Data as Provided by the World Bank API (1960 - 2016)
+#' A Snapshot of Macroeconomic Data as Provided by the World Bank API (1960 - 2018)
 #'
 #' Data collected from the World Bank API using the package \code{wbstats}.
 #'
@@ -80,8 +80,8 @@
 #'
 #' @keywords data datasets macroeconomic
 #'
-#' @source Has been collected using the \code{\link[wbstats]{wb}} function
-#'  from the World Bank API in March 2018.
+#' @source Has been collected using the \code{wbstats::wb()} function
+#'  from the World Bank API in Dec 2020.
 #'  The code to generate this data is available in the
 #'  \href{https://github.com/joachim-gassen/ExPanDaR}{github repository} of this package.
 #'  Use in scientific studies is not advised without prior cleaning/checking.

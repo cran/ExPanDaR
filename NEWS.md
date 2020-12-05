@@ -1,3 +1,37 @@
+# ExPanDaR 0.5.2
+
+Extensions:
+
+* Added a `prepare_by_group_trend_graph()` function to plot time trends by
+grouping variable
+
+* Included grouped time trend plots in `ExPanD()`
+
+
+Bug fixes:
+
+* Fixed notebook code for sub sampling (failed on sampling variables containing `NA`s) 
+
+* Fixed a small issue in the Notebook generation code for the time trend and
+quantile trend chunks
+
+* Fixed display of `prepare_regression_table()` for logit model by group tables
+with fixed effects
+
+
+Minor Issues:
+
+* Replaced `lfe` with `plm` package for fixed effect models as `lfe` has been
+removed from CRAN
+
+* Removed `wbstats` from Suggests as it is currently not on CRAN
+
+* Removed `tidyquant` package from Suggests as it depends on a package that
+requires R >= 3.5.0
+
+* Spelling
+
+
 # ExPanDaR 0.5.1
 
 Extensions:
@@ -21,7 +55,7 @@ that data frame variables can be specified as cross-sectional identifiers
 in the cross-sectional mode
 
 * Removed some artefacts in cross-sectional mode where cross-sectional and
-time series indentifiers were still provided as variable options in the 
+time series identifiers were still provided as variable options in the 
 `ExPanD()` app
 
 * Included manual zip package import in `NAMESPACE` to make `devtoools::check()` 
@@ -128,7 +162,7 @@ Minor issues:
 
 * Fixed the definition of `oint_ta` in `r3` dataset
 
-* Added a check to verify that `ts_ids` provided as ordered vectors 
+* Added a check to verify that `ts_id` is provided as an ordered vector 
 
 * Fixed a typo in `worldbank_var_def`
 
