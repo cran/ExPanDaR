@@ -1,7 +1,7 @@
 Package: ExPanDaR
 Type: Package
 Title: Explore Your Data Interactively
-Version: 0.5.2
+Version: 0.5.3
 Authors@R: person("Joachim", "Gassen", role = c("aut", "cre"), 
     email = "gassen@wiwi.hu-berlin.de",
     comment = c(ORCID = "0000-0003-4364-2911"))
@@ -26,8 +26,8 @@ RoxygenNote: 7.1.0
 Suggests: gapminder, rmarkdown, htmltools, knitr, devtools
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2020-12-05 16:21:10 UTC; joachim
+Packaged: 2020-12-06 13:02:10 UTC; joachim
 Author: Joachim Gassen [aut, cre] (<https://orcid.org/0000-0003-4364-2911>)
 Maintainer: Joachim Gassen <gassen@wiwi.hu-berlin.de>
 Repository: CRAN
-Date/Publication: 2020-12-05 22:50:15 UTC
+Date/Publication: 2020-12-06 23:50:03 UTC
